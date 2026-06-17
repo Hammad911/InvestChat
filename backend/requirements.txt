@@ -1,0 +1,64 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# AI Due Diligence Copilot — Backend Dependencies
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Web Framework ────────────────────────────────────────────────────────────
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
+gunicorn==23.0.0
+python-multipart==0.0.20
+
+# ── Database ─────────────────────────────────────────────────────────────────
+sqlalchemy[asyncio]==2.0.41
+asyncpg==0.30.0
+psycopg2-binary==2.9.10
+alembic==1.15.2
+
+# ── LLM & RAG ───────────────────────────────────────────────────────────────
+llama-index-core==0.12.37
+llama-index-llms-ollama==0.5.2
+llama-index-embeddings-ollama==0.5.1
+llama-index-vector-stores-qdrant==0.4.8
+
+# ── Vector Database ──────────────────────────────────────────────────────────
+qdrant-client==1.14.2
+
+# ── Reranking ────────────────────────────────────────────────────────────────
+sentence-transformers==4.1.0
+torch==2.7.1
+
+# ── Document Parsing ─────────────────────────────────────────────────────────
+unstructured==0.17.2
+pdfplumber==0.11.6
+python-docx==1.1.2
+python-pptx==1.0.2
+openpyxl==3.1.5
+
+# ── Task Queue ───────────────────────────────────────────────────────────────
+celery[redis]==5.5.2
+redis==6.2.0
+
+# ── Object Storage ───────────────────────────────────────────────────────────
+minio==7.2.16
+
+# ── Auth & Security ──────────────────────────────────────────────────────────
+python-jose[cryptography]==3.4.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.3.0
+
+# ── Observability ────────────────────────────────────────────────────────────
+structlog==25.4.0
+
+# ── Rate Limiting ────────────────────────────────────────────────────────────
+slowapi==0.1.9
+
+# ── Utilities ────────────────────────────────────────────────────────────────
+python-dotenv==1.1.0
+httpx==0.28.1
+pydantic[email]==2.11.5
+pydantic-settings==2.9.1
+
+# ── Testing ──────────────────────────────────────────────────────────────────
+pytest==8.4.1
+pytest-asyncio==1.0.0
+httpx==0.28.1

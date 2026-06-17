@@ -1,0 +1,33 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# AI Due Diligence Copilot — Docker Compose Production Overrides
+# ══════════════════════════════════════════════════════════════════════════════
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ══════════════════════════════════════════════════════════════════════════════
+
+services:
+  backend:
+    command: >
+      gunicorn app.main:app
+      --workers 4
+      --worker-class uvicorn.workers.UvicornWorker
+      --bind 0.0.0.0:8000
+      --timeout 300
+      --access-logfile -
+    volumes: []
+    restart: always
+
+  worker:
+    command: >
+      celery -A app.tasks.ingestion_tasks worker
+      --loglevel=warning
+      --concurrency=4
+      --pool=prefork
+    volumes: []
+    restart: always
+
+  frontend:
+    command: npm run start
+    volumes: []
+    restart: always
+    environment:
+      - NODE_ENV=production

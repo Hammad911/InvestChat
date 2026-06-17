@@ -1,0 +1,228 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# AI Due Diligence Copilot — Docker Compose (Development)
+# ══════════════════════════════════════════════════════════════════════════════
+# Start all services: docker-compose up --build
+# Stop all services:  docker-compose down
+# Reset everything:   docker-compose down -v
+# ══════════════════════════════════════════════════════════════════════════════
+
+services:
+  # ── Ollama: Local LLM Inference Server ─────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: dd-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./ollama/entrypoint.sh:/entrypoint.sh
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    environment:
+      - OLLAMA_LLM_MODEL=${OLLAMA_LLM_MODEL:-mistral:7b}
+      - OLLAMA_EMBED_MODEL=${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+    networks:
+      - ddcopilot
+    restart: unless-stopped
+    # ── Uncomment for NVIDIA GPU acceleration ──
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # ── PostgreSQL 16: Relational Database ─────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: dd-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ddcopilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-ddcopilot}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ddcopilot} -d ${POSTGRES_DB:-ddcopilot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ddcopilot
+    restart: unless-stopped
+
+  # ── Qdrant: Vector Database ────────────────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: dd-qdrant
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ddcopilot
+    restart: unless-stopped
+
+  # ── Redis 7: Task Queue + Cache ────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: dd-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ddcopilot
+    restart: unless-stopped
+
+  # ── MinIO: S3-Compatible Object Storage ────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: dd-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ddcopilot
+    restart: unless-stopped
+
+  # ── Backend: FastAPI Application ───────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dd-backend
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --log-level info
+    volumes:
+      - ./backend/app:/app/app
+      - model_cache:/root/.cache
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      ollama:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - ddcopilot
+    restart: unless-stopped
+
+  # ── Worker: Celery Ingestion Worker ────────────────────────────────────────
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dd-worker
+    command: >
+      celery -A app.tasks.ingestion_tasks worker
+      --loglevel=info
+      --concurrency=2
+      --pool=prefork
+    volumes:
+      - ./backend/app:/app/app
+      - model_cache:/root/.cache
+    env_file:
+      - .env
+    depends_on:
+      ollama:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - ddcopilot
+    restart: unless-stopped
+
+  # ── Frontend: Next.js Application ──────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dd-frontend
+    command: npm run dev
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+      - WATCHPACK_POLLING=true
+    depends_on:
+      - backend
+    networks:
+      - ddcopilot
+    restart: unless-stopped
+
+# ── Volumes ──────────────────────────────────────────────────────────────────
+volumes:
+  ollama_data:
+    name: dd-ollama-data
+  postgres_data:
+    name: dd-postgres-data
+  qdrant_data:
+    name: dd-qdrant-data
+  redis_data:
+    name: dd-redis-data
+  minio_data:
+    name: dd-minio-data
+  model_cache:
+    name: dd-model-cache
+
+# ── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  ddcopilot:
+    name: ddcopilot
+    driver: bridge
