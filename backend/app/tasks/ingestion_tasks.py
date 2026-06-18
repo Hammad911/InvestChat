@@ -5,7 +5,13 @@ from __future__ import annotations
 
 from celery import Celery
 
+import ssl
 from app.core.config import settings
+
+# Automatically handle secure Redis connections (Upstash rediss://)
+ssl_options = None
+if settings.REDIS_URL and settings.REDIS_URL.startswith("rediss://"):
+    ssl_options = {"ssl_cert_reqs": ssl.CERT_NONE}
 
 # ── Celery App ───────────────────────────────────────────────────────────────
 celery_app = Celery(
@@ -26,6 +32,8 @@ celery_app.conf.update(
     task_reject_on_worker_lost=True,
     task_default_retry_delay=30,
     task_max_retries=3,
+    broker_use_ssl=ssl_options,
+    redis_backend_use_ssl=ssl_options,
 )
 
 
