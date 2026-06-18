@@ -44,6 +44,11 @@ def _get_model():
 
 
 def get_qdrant_client() -> QdrantClient:
+    if settings.QDRANT_URL and settings.QDRANT_API_KEY:
+        return QdrantClient(
+            url=settings.QDRANT_URL,
+            api_key=settings.QDRANT_API_KEY,
+        )
     return QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
 
 

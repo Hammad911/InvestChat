@@ -30,6 +30,24 @@ class Settings(BaseSettings):
     DATABASE_URL: str | None = None
     DATABASE_URL_SYNC: str | None = None
 
+
+    # ── Qdrant ───────────────────────────────────────────────────────────
+    QDRANT_URL: str | None = None
+    QDRANT_API_KEY: str | None = None
+    QDRANT_HOST: str = "qdrant"
+    QDRANT_PORT: int = 6333
+    QDRANT_COLLECTION: str = "due_diligence_chunks"
+
+    # ── Redis ────────────────────────────────────────────────────────────
+    REDIS_URL: str = "redis://redis:6379/0"
+
+    # ── MinIO ────────────────────────────────────────────────────────────
+    MINIO_ENDPOINT: str = "minio:9000"
+    MINIO_ACCESS_KEY: str = "minioadmin"
+    MINIO_SECRET_KEY: str = "minioadmin"
+    MINIO_BUCKET: str = "dd-documents"
+    MINIO_SECURE: bool = False
+
     def model_post_init(self, __context) -> None:
         if not self.DATABASE_URL:
             self.DATABASE_URL = (
@@ -52,20 +70,9 @@ class Settings(BaseSettings):
         elif self.DATABASE_URL_SYNC.startswith("postgresql://"):
             self.DATABASE_URL_SYNC = self.DATABASE_URL_SYNC.replace("postgresql://", "postgresql+psycopg2://")
 
-    # ── Qdrant ───────────────────────────────────────────────────────────
-    QDRANT_HOST: str = "qdrant"
-    QDRANT_PORT: int = 6333
-    QDRANT_COLLECTION: str = "due_diligence_chunks"
-
-    # ── Redis ────────────────────────────────────────────────────────────
-    REDIS_URL: str = "redis://redis:6379/0"
-
-    # ── MinIO ────────────────────────────────────────────────────────────
-    MINIO_ENDPOINT: str = "minio:9000"
-    MINIO_ACCESS_KEY: str = "minioadmin"
-    MINIO_SECRET_KEY: str = "minioadmin"
-    MINIO_BUCKET: str = "dd-documents"
-    MINIO_SECURE: bool = False
+        # Automatically use secure for remote buckets like Cloudflare R2
+        if "cloudflarestorage.com" in self.MINIO_ENDPOINT or "amazonaws.com" in self.MINIO_ENDPOINT:
+            self.MINIO_SECURE = True
 
     # ── JWT ──────────────────────────────────────────────────────────────
     JWT_SECRET_KEY: str = "change-this-to-a-long-random-string-in-production"
