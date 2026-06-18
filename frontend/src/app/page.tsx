@@ -10,7 +10,7 @@ import {
   FileSearch,
   BarChart3,
   MessageSquare,
-  Zap,
+  TrendingUp,
 } from "lucide-react";
 
 export default function AuthPage() {
@@ -46,23 +46,27 @@ export default function AuthPage() {
   const features = [
     {
       icon: FileSearch,
-      title: "Smart Document Ingestion",
-      desc: "Upload SEC filings, financials, and presentations — AI extracts and indexes everything.",
+      title: "Smart Ingestion",
+      desc: "Upload SEC filings, financials & presentations — AI extracts and indexes everything.",
+      num: "01",
     },
     {
       icon: Shield,
       title: "Risk Assessment",
       desc: "Automated risk matrix with severity scores and source citations.",
+      num: "02",
     },
     {
       icon: BarChart3,
       title: "Financial Extraction",
       desc: "Key metrics extracted from tables with YoY comparisons.",
+      num: "03",
     },
     {
       icon: MessageSquare,
       title: "Chat with Documents",
       desc: "Ask questions — get source-backed answers with inline citations.",
+      num: "04",
     },
   ];
 
@@ -73,105 +77,134 @@ export default function AuthPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "20px",
+        padding: "24px",
       }}
     >
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          maxWidth: "1100px",
+          gridTemplateColumns: "1.1fr 0.9fr",
+          maxWidth: "1080px",
           width: "100%",
-          gap: "60px",
+          gap: "80px",
           alignItems: "center",
         }}
       >
         {/* Left — Branding */}
-        <div className="animate-fade-in">
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+        <div>
+          {/* Logo */}
+          <div
+            className="animate-fade-in stagger-1"
+            style={{ opacity: 0, display: "flex", alignItems: "center", gap: "10px", marginBottom: "32px" }}
+          >
             <div
               style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, var(--color-accent), #60a5fa)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                width: "10px",
+                height: "10px",
+                borderRadius: "50%",
+                background: "var(--color-accent)",
+                boxShadow: "0 0 12px rgba(212, 168, 83, 0.4)",
               }}
-            >
-              <Zap size={22} color="#0a0e1a" />
-            </div>
+            />
             <span
               style={{
-                fontSize: "13px",
-                fontWeight: 600,
+                fontSize: "12px",
+                fontWeight: 700,
+                fontFamily: "var(--font-mono)",
                 color: "var(--color-accent)",
-                letterSpacing: "2px",
+                letterSpacing: "3px",
                 textTransform: "uppercase",
               }}
             >
               InvestChat
             </span>
           </div>
+
+          {/* Headline */}
           <h1
+            className="animate-fade-in stagger-2"
             style={{
-              fontSize: "42px",
+              opacity: 0,
+              fontSize: "48px",
               fontWeight: 800,
-              lineHeight: 1.15,
-              marginBottom: "16px",
-              background: "linear-gradient(135deg, #f1f5f9, #94a3b8)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              lineHeight: 1.08,
+              marginBottom: "20px",
+              letterSpacing: "-0.03em",
+              color: "var(--color-text-primary)",
             }}
           >
-            AI Due Diligence
+            Due Diligence,
             <br />
-            Copilot
+            <span style={{ color: "var(--color-accent)" }}>Accelerated.</span>
           </h1>
+
           <p
+            className="animate-fade-in stagger-3"
             style={{
-              fontSize: "16px",
+              opacity: 0,
+              fontSize: "15px",
               color: "var(--color-text-secondary)",
               lineHeight: 1.7,
-              marginBottom: "36px",
-              maxWidth: "420px",
+              marginBottom: "40px",
+              maxWidth: "400px",
             }}
           >
-            Upload company documents and get instant AI-powered risk assessments,
-            financial analysis, and executive summaries — all running locally with
-            zero API costs.
+            Upload company documents and get AI-powered risk assessments,
+            financial analysis, and executive summaries — powered by your
+            own infrastructure.
           </p>
 
-          <div style={{ display: "grid", gap: "16px" }}>
+          {/* Feature List */}
+          <div style={{ display: "grid", gap: "12px" }}>
             {features.map((f, i) => (
               <div
                 key={i}
+                className={`animate-fade-in stagger-${i + 4}`}
                 style={{
+                  opacity: 0,
                   display: "flex",
-                  gap: "14px",
-                  padding: "12px 16px",
+                  gap: "16px",
+                  padding: "14px 18px",
                   borderRadius: "var(--radius-md)",
                   background: "var(--color-bg-card)",
                   border: "1px solid var(--color-border)",
+                  transition: "all 0.25s ease",
+                  cursor: "default",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(212, 168, 83, 0.2)";
+                  e.currentTarget.style.background = "var(--color-bg-elevated)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--color-border)";
+                  e.currentTarget.style.background = "var(--color-bg-card)";
                 }}
               >
-                <f.icon
-                  size={20}
-                  style={{ color: "var(--color-accent)", flexShrink: 0, marginTop: "2px" }}
-                />
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 600,
+                    color: "var(--color-accent)",
+                    lineHeight: "20px",
+                    flexShrink: 0,
+                    opacity: 0.6,
+                  }}
+                >
+                  {f.num}
+                </span>
                 <div>
                   <div
                     style={{
-                      fontSize: "14px",
+                      fontSize: "13.5px",
                       fontWeight: 600,
                       color: "var(--color-text-primary)",
-                      marginBottom: "2px",
+                      marginBottom: "3px",
                     }}
                   >
                     {f.title}
                   </div>
-                  <div style={{ fontSize: "13px", color: "var(--color-text-muted)" }}>
+                  <div style={{ fontSize: "12.5px", color: "var(--color-text-muted)", lineHeight: 1.5 }}>
                     {f.desc}
                   </div>
                 </div>
@@ -181,22 +214,40 @@ export default function AuthPage() {
         </div>
 
         {/* Right — Auth Form */}
-        <div className="glass-card animate-slide-up" style={{ padding: "40px" }}>
+        <div
+          className="glass-card animate-slide-up"
+          style={{
+            padding: "44px",
+            opacity: 0,
+            animationDelay: "0.15s",
+          }}
+        >
+          <div
+            style={{
+              width: "40px",
+              height: "3px",
+              borderRadius: "3px",
+              background: "linear-gradient(90deg, var(--color-accent), transparent)",
+              marginBottom: "28px",
+            }}
+          />
+
           <h2
             style={{
-              fontSize: "24px",
+              fontSize: "22px",
               fontWeight: 700,
-              marginBottom: "8px",
+              marginBottom: "6px",
               color: "var(--color-text-primary)",
+              letterSpacing: "-0.02em",
             }}
           >
             {isLogin ? "Welcome back" : "Create account"}
           </h2>
           <p
             style={{
-              fontSize: "14px",
+              fontSize: "13.5px",
               color: "var(--color-text-muted)",
-              marginBottom: "28px",
+              marginBottom: "32px",
             }}
           >
             {isLogin
@@ -204,15 +255,18 @@ export default function AuthPage() {
               : "Start analyzing company documents in minutes"}
           </p>
 
-          <form onSubmit={handleSubmit} style={{ display: "grid", gap: "16px" }}>
+          <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
             {!isLogin && (
               <div>
                 <label
                   style={{
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "var(--color-text-secondary)",
-                    marginBottom: "6px",
+                    fontSize: "11.5px",
+                    fontWeight: 600,
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--color-text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    marginBottom: "8px",
                     display: "block",
                   }}
                 >
@@ -233,10 +287,13 @@ export default function AuthPage() {
             <div>
               <label
                 style={{
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "var(--color-text-secondary)",
-                  marginBottom: "6px",
+                  fontSize: "11.5px",
+                  fontWeight: 600,
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--color-text-muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginBottom: "8px",
                   display: "block",
                 }}
               >
@@ -256,10 +313,13 @@ export default function AuthPage() {
             <div>
               <label
                 style={{
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  color: "var(--color-text-secondary)",
-                  marginBottom: "6px",
+                  fontSize: "11.5px",
+                  fontWeight: 600,
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--color-text-muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginBottom: "8px",
                   display: "block",
                 }}
               >
@@ -285,6 +345,7 @@ export default function AuthPage() {
                   background: "var(--color-rose-dim)",
                   color: "var(--color-rose)",
                   fontSize: "13px",
+                  border: "1px solid rgba(248, 113, 113, 0.15)",
                 }}
               >
                 {error}
@@ -298,21 +359,21 @@ export default function AuthPage() {
               style={{
                 width: "100%",
                 justifyContent: "center",
-                padding: "12px",
-                fontSize: "15px",
+                padding: "13px",
+                fontSize: "14px",
                 marginTop: "4px",
                 opacity: loading ? 0.7 : 1,
               }}
               id="btn-submit"
             >
               {loading ? "Processing..." : isLogin ? "Sign In" : "Create Account"}
-              {!loading && <ArrowRight size={16} />}
+              {!loading && <ArrowRight size={15} />}
             </button>
           </form>
 
           <div
             style={{
-              marginTop: "20px",
+              marginTop: "24px",
               textAlign: "center",
               fontSize: "13px",
               color: "var(--color-text-muted)",
@@ -331,6 +392,7 @@ export default function AuthPage() {
                 cursor: "pointer",
                 fontWeight: 600,
                 fontSize: "13px",
+                fontFamily: "var(--font-heading)",
               }}
               id="btn-toggle-auth"
             >

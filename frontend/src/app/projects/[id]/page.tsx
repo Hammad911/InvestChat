@@ -155,14 +155,14 @@ export default function ProjectWorkspace({ params }: PageProps) {
 
   // ── Status Icons ────────────────────────────────────────────────────
   const IngestionIcon = ({ s }: { s: string }) => {
-    if (s === "complete") return <CheckCircle size={14} style={{ color: "var(--color-emerald)" }} />;
-    if (s === "failed") return <XCircle size={14} style={{ color: "var(--color-rose)" }} />;
-    if (s === "pending") return <Clock size={14} style={{ color: "var(--color-text-muted)" }} />;
-    return <Loader2 size={14} style={{ color: "var(--color-accent)", animation: "spin 1s linear infinite" }} />;
+    if (s === "complete") return <CheckCircle size={12} style={{ color: "var(--color-emerald)" }} />;
+    if (s === "failed") return <XCircle size={12} style={{ color: "var(--color-rose)" }} />;
+    if (s === "pending") return <Clock size={12} style={{ color: "var(--color-text-muted)" }} />;
+    return <Loader2 size={12} style={{ color: "var(--color-accent)", animation: "spin 1s linear infinite" }} />;
   };
 
   const tabs = [
-    { id: "risks", label: "Risk Matrix", icon: Shield },
+    { id: "risks", label: "Risks", icon: Shield },
     { id: "growth", label: "Growth", icon: TrendingUp },
     { id: "financials", label: "Financials", icon: DollarSign },
     { id: "summary", label: "Summary", icon: BookOpen },
@@ -172,7 +172,10 @@ export default function ProjectWorkspace({ params }: PageProps) {
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Loader2 size={32} style={{ color: "var(--color-accent)", animation: "spin 1s linear infinite" }} />
+        <div style={{ textAlign: "center" }}>
+          <Loader2 size={28} style={{ color: "var(--color-accent)", animation: "spin 1s linear infinite", marginBottom: "12px" }} />
+          <p style={{ fontSize: "13px", fontFamily: "var(--font-mono)", color: "var(--color-text-muted)" }}>Loading project...</p>
+        </div>
       </div>
     );
   }
@@ -182,29 +185,39 @@ export default function ProjectWorkspace({ params }: PageProps) {
       {/* Header */}
       <header style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "12px 24px", borderBottom: "1px solid var(--color-border)",
-        background: "var(--color-bg-secondary)",
+        padding: "0 20px", height: "50px", borderBottom: "1px solid var(--color-border)",
+        background: "var(--color-bg-secondary)", flexShrink: 0,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button className="btn-ghost" onClick={() => router.push("/dashboard")} style={{ padding: "6px" }}>
-            <ArrowLeft size={18} />
+          <button
+            className="btn-ghost"
+            onClick={() => router.push("/dashboard")}
+            style={{ padding: "5px", color: "var(--color-text-muted)" }}
+          >
+            <ArrowLeft size={16} />
           </button>
+          <div style={{ width: "1px", height: "20px", background: "var(--color-border)" }} />
           <div>
-            <h1 style={{ fontSize: "16px", fontWeight: 700 }}>{activeProject?.name}</h1>
-            <p style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>
-              {documents.length} documents • {activeProject?.status}
+            <h1 style={{
+              fontSize: "14px", fontWeight: 600, letterSpacing: "-0.01em",
+            }}>{activeProject?.name}</h1>
+            <p style={{
+              fontSize: "11px", fontFamily: "var(--font-mono)", color: "var(--color-text-muted)",
+            }}>
+              {documents.length} doc{documents.length !== 1 ? "s" : ""} · {activeProject?.status}
             </p>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: "5px", padding: "4px 10px",
+          borderRadius: "14px", background: "var(--color-bg-card)", border: "1px solid var(--color-border-subtle)",
+          fontSize: "11px", fontFamily: "var(--font-mono)", color: "var(--color-text-muted)",
+        }}>
           <div style={{
-            display: "flex", alignItems: "center", gap: "6px", padding: "5px 12px",
-            borderRadius: "20px", background: "var(--color-bg-card)", border: "1px solid var(--color-border)",
-            fontSize: "12px", color: "var(--color-text-muted)",
-          }}>
-            <Zap size={12} style={{ color: "var(--color-accent)" }} />
-            Local LLM
-          </div>
+            width: "5px", height: "5px", borderRadius: "50%",
+            background: "var(--color-emerald)", boxShadow: "0 0 6px rgba(74, 222, 128, 0.5)",
+          }} />
+          Gemini Flash
         </div>
       </header>
 
@@ -212,36 +225,68 @@ export default function ProjectWorkspace({ params }: PageProps) {
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {/* ── Left Panel: Documents ──────────────────────────────── */}
         <aside style={{
-          width: "300px", borderRight: "1px solid var(--color-border)",
+          width: "280px", borderRight: "1px solid var(--color-border)",
           background: "var(--color-bg-secondary)", display: "flex", flexDirection: "column",
           flexShrink: 0,
         }}>
           <div style={{ padding: "16px", borderBottom: "1px solid var(--color-border)" }}>
-            <h3 style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px" }}>
-              Documents
-            </h3>
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              marginBottom: "14px",
+            }}>
+              <span style={{
+                fontSize: "11px", fontWeight: 600, fontFamily: "var(--font-mono)",
+                color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "1.5px",
+              }}>
+                Documents
+              </span>
+              <span style={{
+                fontSize: "10px", fontFamily: "var(--font-mono)", color: "var(--color-text-muted)",
+                background: "var(--color-bg-card)", padding: "2px 7px", borderRadius: "10px",
+              }}>
+                {documents.length}
+              </span>
+            </div>
 
             {/* Upload Zone */}
             <div
               {...getRootProps()}
+              className={`upload-zone ${isDragActive ? "active" : ""}`}
               style={{
-                border: `2px dashed ${isDragActive ? "var(--color-accent)" : "var(--color-border)"}`,
-                borderRadius: "var(--radius-md)", padding: "20px", textAlign: "center",
-                cursor: "pointer", background: isDragActive ? "var(--color-accent-dim)" : "transparent",
-                transition: "all 0.2s ease",
+                padding: "18px",
+                ...(isDragActive ? {} : {}),
               }}
               id="upload-zone"
             >
               <input {...getInputProps()} />
-              <Upload size={20} style={{ color: "var(--color-text-muted)", margin: "0 auto 8px" }} />
-              <p style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>
-                {uploading ? "Uploading..." : isDragActive ? "Drop files here" : "Drop files or click to upload"}
+              <Upload
+                size={18}
+                style={{
+                  color: isDragActive ? "var(--color-accent)" : "var(--color-text-muted)",
+                  margin: "0 auto 8px",
+                  display: "block",
+                }}
+              />
+              <p style={{
+                fontSize: "12px",
+                color: isDragActive ? "var(--color-accent)" : "var(--color-text-muted)",
+                margin: 0,
+              }}>
+                {uploading
+                  ? "Uploading..."
+                  : isDragActive
+                  ? "Drop files here"
+                  : "Drop or click to upload"}
               </p>
             </div>
 
             <select
               value={docType} onChange={(e) => setDocType(e.target.value)}
-              className="input-field" style={{ marginTop: "8px", fontSize: "12px", padding: "6px 10px" }}
+              className="input-field"
+              style={{
+                marginTop: "8px", fontSize: "11px", padding: "6px 10px",
+                fontFamily: "var(--font-mono)",
+              }}
               id="select-doctype"
             >
               <option value="other">Auto-detect type</option>
@@ -253,7 +298,7 @@ export default function ProjectWorkspace({ params }: PageProps) {
           </div>
 
           {/* Document List */}
-          <div style={{ flex: 1, overflow: "auto", padding: "8px" }}>
+          <div style={{ flex: 1, overflow: "auto", padding: "6px" }}>
             {documents.map((doc) => (
               <div
                 key={doc.id}
@@ -265,15 +310,19 @@ export default function ProjectWorkspace({ params }: PageProps) {
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-bg-hover)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
-                <FileText size={16} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
+                <FileText size={14} style={{ color: "var(--color-accent)", flexShrink: 0, opacity: 0.7 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    fontSize: "13px", fontWeight: 500, whiteSpace: "nowrap",
+                    fontSize: "12.5px", fontWeight: 500, whiteSpace: "nowrap",
                     overflow: "hidden", textOverflow: "ellipsis",
                   }}>
                     {doc.original_filename}
                   </div>
-                  <div style={{ fontSize: "11px", color: "var(--color-text-muted)", display: "flex", gap: "8px", alignItems: "center" }}>
+                  <div style={{
+                    fontSize: "10.5px", fontFamily: "var(--font-mono)",
+                    color: "var(--color-text-muted)", display: "flex", gap: "6px", alignItems: "center",
+                    marginTop: "2px",
+                  }}>
                     <span>{formatFileSize(doc.file_size)}</span>
                     <IngestionIcon s={doc.ingestion_status} />
                     <span>{doc.chunk_count > 0 ? `${doc.chunk_count} chunks` : doc.ingestion_status}</span>
@@ -281,16 +330,29 @@ export default function ProjectWorkspace({ params }: PageProps) {
                   
                   {/* Progress bar */}
                   {(doc.ingestion_status === "pending" || doc.ingestion_status === "processing") && (
-                    <div style={{ height: "3px", width: "100%", background: "var(--color-bg-card)", borderRadius: "3px", overflow: "hidden", marginTop: "6px" }}>
-                      <div className="animate-progress" style={{ height: "100%", width: "50%", background: "var(--color-accent)", borderRadius: "3px" }} />
+                    <div style={{
+                      height: "2px", width: "100%", background: "var(--color-bg-card)",
+                      borderRadius: "2px", overflow: "hidden", marginTop: "6px",
+                    }}>
+                      <div className="animate-progress" style={{
+                        height: "100%", width: "40%",
+                        background: "linear-gradient(90deg, var(--color-accent), transparent)",
+                        borderRadius: "2px",
+                      }} />
                     </div>
                   )}
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteDocument(projectId, doc.id).then(loadProject); }}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)", padding: "4px" }}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "var(--color-text-muted)", padding: "4px", opacity: 0.3,
+                    transition: "opacity 0.15s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.3")}
                 >
-                  <Trash2 size={12} />
+                  <Trash2 size={11} />
                 </button>
               </div>
             ))}
@@ -300,7 +362,10 @@ export default function ProjectWorkspace({ params }: PageProps) {
         {/* ── Center Panel: Analysis ─────────────────────────────── */}
         <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* Tab Navigation */}
-          <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--color-border)" }}>
+          <div style={{
+            padding: "10px 20px", borderBottom: "1px solid var(--color-border)",
+            background: "var(--color-bg-secondary)",
+          }}>
             <div className="tab-list" style={{ display: "inline-flex" }}>
               {tabs.map((t) => (
                 <button
@@ -309,7 +374,7 @@ export default function ProjectWorkspace({ params }: PageProps) {
                   onClick={() => setActiveTab(t.id)}
                   id={`tab-${t.id}`}
                 >
-                  <t.icon size={14} style={{ marginRight: "6px", verticalAlign: "middle" }} />
+                  <t.icon size={13} style={{ marginRight: "5px", verticalAlign: "middle" }} />
                   {t.label}
                 </button>
               ))}
@@ -322,30 +387,55 @@ export default function ProjectWorkspace({ params }: PageProps) {
             {activeTab === "chat" && (
               <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
                 {/* Messages */}
-                <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "16px" }}>
+                <div style={{
+                  flex: 1, overflow: "auto", display: "flex", flexDirection: "column",
+                  gap: "14px", paddingBottom: "16px",
+                }}>
                   {messages.length === 0 && !isStreaming && (
-                    <div style={{ textAlign: "center", padding: "60px 20px" }}>
-                      <MessageSquare size={40} style={{ color: "var(--color-text-muted)", margin: "0 auto 12px" }} />
-                      <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Ask anything about your documents</h3>
-                      <p style={{ fontSize: "13px", color: "var(--color-text-muted)" }}>Your answers will include source citations.</p>
+                    <div style={{ textAlign: "center", padding: "80px 20px" }}>
+                      <div style={{
+                        width: "52px", height: "52px", borderRadius: "var(--radius-lg)",
+                        background: "var(--color-bg-elevated)", border: "1px solid var(--color-border)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        margin: "0 auto 16px",
+                      }}>
+                        <MessageSquare size={22} style={{ color: "var(--color-text-muted)" }} />
+                      </div>
+                      <h3 style={{
+                        fontSize: "15px", fontWeight: 600, marginBottom: "6px",
+                        letterSpacing: "-0.01em",
+                      }}>
+                        Ask anything about your documents
+                      </h3>
+                      <p style={{
+                        fontSize: "12px", color: "var(--color-text-muted)",
+                        fontFamily: "var(--font-mono)",
+                      }}>
+                        Answers include source citations.
+                      </p>
                     </div>
                   )}
 
                   {messages.map((m) => (
                     <div key={m.id} style={{
-                      display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start",
+                      display: "flex",
+                      justifyContent: m.role === "user" ? "flex-end" : "flex-start",
                     }}>
-                      <div style={{
-                        maxWidth: "75%", padding: "12px 16px", borderRadius: "var(--radius-md)",
-                        background: m.role === "user" ? "var(--color-accent-dim)" : "var(--color-bg-card)",
-                        border: `1px solid ${m.role === "user" ? "rgba(56,189,248,0.2)" : "var(--color-border)"}`,
-                      }}>
-                        <p style={{ fontSize: "14px", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{m.content}</p>
+                      <div
+                        className={m.role === "user" ? "chat-msg-user" : "chat-msg-assistant"}
+                        style={{
+                          maxWidth: "72%", padding: "12px 16px",
+                        }}
+                      >
+                        <p style={{
+                          fontSize: "13.5px", lineHeight: 1.7, whiteSpace: "pre-wrap",
+                          margin: 0,
+                        }}>{m.content}</p>
                         {m.citations && m.citations.length > 0 && (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "8px" }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "10px" }}>
                             {m.citations.map((c: Citation, i: number) => (
                               <span key={i} className="citation-chip">
-                                [{c.citation_index}] {c.doc_name?.substring(0, 20)}
+                                [{c.citation_index}] {c.doc_name?.substring(0, 18)}
                               </span>
                             ))}
                           </div>
@@ -357,27 +447,38 @@ export default function ProjectWorkspace({ params }: PageProps) {
                   {/* Streaming */}
                   {isStreaming && streamContent && (
                     <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                      <div style={{
-                        maxWidth: "75%", padding: "12px 16px", borderRadius: "var(--radius-md)",
-                        background: "var(--color-bg-card)", border: "1px solid var(--color-border)",
-                      }}>
-                        <p style={{ fontSize: "14px", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{streamContent}</p>
+                      <div className="chat-msg-assistant" style={{ maxWidth: "72%", padding: "12px 16px" }}>
+                        <p style={{
+                          fontSize: "13.5px", lineHeight: 1.7, whiteSpace: "pre-wrap", margin: 0,
+                        }}>{streamContent}</p>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* Input */}
-                <div style={{ display: "flex", gap: "10px", padding: "12px 0" }}>
+                <div style={{
+                  display: "flex", gap: "8px", paddingTop: "12px",
+                  borderTop: "1px solid var(--color-border)",
+                }}>
                   <input
-                    className="input-field" placeholder="Ask about the documents..."
-                    value={chatInput} onChange={(e) => setChatInput(e.target.value)}
+                    className="input-field"
+                    placeholder="Ask about the documents..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
                     disabled={isStreaming}
+                    style={{ fontSize: "13.5px" }}
                     id="chat-input"
                   />
-                  <button className="btn-primary" onClick={handleSend} disabled={isStreaming || !chatInput.trim()} id="btn-send">
-                    <Send size={16} />
+                  <button
+                    className="btn-primary"
+                    onClick={handleSend}
+                    disabled={isStreaming || !chatInput.trim()}
+                    style={{ padding: "10px 16px", flexShrink: 0 }}
+                    id="btn-send"
+                  >
+                    <Send size={14} />
                   </button>
                 </div>
               </div>
@@ -395,12 +496,18 @@ export default function ProjectWorkspace({ params }: PageProps) {
                     style={{ opacity: analyzing ? 0.7 : 1 }}
                     id={`btn-run-${activeTab}`}
                   >
-                    {analyzing ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Zap size={16} />}
+                    {analyzing
+                      ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                      : <Zap size={14} />
+                    }
                     {analyzing ? "Analyzing..." : `Run ${tabs.find(t => t.id === activeTab)?.label} Analysis`}
                   </button>
                   {documents.length === 0 && (
-                    <p style={{ fontSize: "12px", color: "var(--color-amber)", marginTop: "8px" }}>
-                      <AlertTriangle size={12} style={{ verticalAlign: "middle", marginRight: "4px" }} />
+                    <p style={{
+                      fontSize: "12px", color: "var(--color-amber)",
+                      marginTop: "8px", fontFamily: "var(--font-mono)",
+                    }}>
+                      <AlertTriangle size={11} style={{ verticalAlign: "middle", marginRight: "4px" }} />
                       Upload documents first to run analysis.
                     </p>
                   )}
@@ -408,50 +515,93 @@ export default function ProjectWorkspace({ params }: PageProps) {
 
                 {/* Results */}
                 {analysisResult?.result && (
-                  <div className="animate-fade-in">
+                  <div className="animate-fade-in" style={{ opacity: 0 }}>
                     {/* Risk Analysis */}
                     {activeTab === "risks" && (() => {
                       const r = analysisResult.result as RiskAnalysis;
                       return (
                         <div>
-                          <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
-                            <div className="glass-card" style={{ padding: "16px 20px", flex: 1 }}>
-                              <div style={{ fontSize: "12px", color: "var(--color-text-muted)", marginBottom: "4px" }}>Overall Risk</div>
-                              <div style={{ fontSize: "20px", fontWeight: 700 }} className={getSeverityColor(r.overall_risk_level || "medium")}>{r.overall_risk_level}</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
+                            <div className="metric-card">
+                              <div className="metric-label">Overall Risk</div>
+                              <div
+                                className="metric-value"
+                                style={{
+                                  color: r.overall_risk_level?.toLowerCase() === "high"
+                                    ? "var(--color-rose)"
+                                    : r.overall_risk_level?.toLowerCase() === "medium"
+                                    ? "var(--color-amber)"
+                                    : "var(--color-emerald)",
+                                  textTransform: "uppercase",
+                                }}
+                              >
+                                {r.overall_risk_level}
+                              </div>
                             </div>
-                            <div className="glass-card" style={{ padding: "16px 20px", flex: 1 }}>
-                              <div style={{ fontSize: "12px", color: "var(--color-text-muted)", marginBottom: "4px" }}>Risks Found</div>
-                              <div style={{ fontSize: "20px", fontWeight: 700 }}>{r.risks?.length || 0}</div>
+                            <div className="metric-card">
+                              <div className="metric-label">Risks Found</div>
+                              <div className="metric-value">{r.risks?.length || 0}</div>
                             </div>
                           </div>
 
                           {r.summary && (
-                            <div className="glass-card" style={{ padding: "16px 20px", marginBottom: "20px" }}>
-                              <p style={{ fontSize: "14px", lineHeight: 1.7, color: "var(--color-text-secondary)" }}>{r.summary}</p>
+                            <div className="glass-card" style={{ padding: "18px 22px", marginBottom: "20px" }}>
+                              <p style={{
+                                fontSize: "13.5px", lineHeight: 1.75, color: "var(--color-text-secondary)",
+                                margin: 0,
+                              }}>{r.summary}</p>
                             </div>
                           )}
 
-                          <div style={{ display: "grid", gap: "12px" }}>
+                          <div style={{ display: "grid", gap: "10px" }}>
                             {r.risks?.map((risk, i) => (
-                              <div key={i} className="glass-card" style={{ padding: "20px" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                                  <span className={`severity-dot ${risk.severity?.toLowerCase()}`} />
-                                  <span className={`badge badge-${risk.severity === "High" ? "danger" : risk.severity === "Medium" ? "warning" : "success"}`}>
+                              <div
+                                key={i}
+                                className="glass-card"
+                                style={{
+                                  padding: "20px 22px",
+                                  borderLeft: `3px solid ${
+                                    risk.severity === "High" ? "var(--color-rose)"
+                                    : risk.severity === "Medium" ? "var(--color-amber)"
+                                    : "var(--color-emerald)"
+                                  }`,
+                                }}
+                              >
+                                <div style={{
+                                  display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px",
+                                }}>
+                                  <span className={`badge badge-${
+                                    risk.severity === "High" ? "danger"
+                                    : risk.severity === "Medium" ? "warning"
+                                    : "success"
+                                  }`}>
                                     {risk.severity}
                                   </span>
-                                  <span style={{ fontSize: "13px", color: "var(--color-violet)", fontWeight: 600 }}>{risk.risk_category}</span>
+                                  <span style={{
+                                    fontSize: "12px", fontFamily: "var(--font-mono)",
+                                    color: "var(--color-violet)", fontWeight: 600,
+                                  }}>
+                                    {risk.risk_category}
+                                  </span>
                                 </div>
-                                <p style={{ fontSize: "14px", lineHeight: 1.7, marginBottom: "8px" }}>{risk.description}</p>
+                                <p style={{
+                                  fontSize: "13.5px", lineHeight: 1.7, marginBottom: "8px", margin: 0,
+                                }}>
+                                  {risk.description}
+                                </p>
                                 {risk.mitigation_notes && (
-                                  <p style={{ fontSize: "13px", color: "var(--color-text-muted)", fontStyle: "italic" }}>
-                                    💡 {risk.mitigation_notes}
+                                  <p style={{
+                                    fontSize: "12.5px", color: "var(--color-text-muted)",
+                                    fontStyle: "italic", margin: "10px 0 0",
+                                  }}>
+                                    → {risk.mitigation_notes}
                                   </p>
                                 )}
                                 {risk.source_citations?.length > 0 && (
-                                  <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
+                                  <div style={{ display: "flex", gap: "4px", marginTop: "10px" }}>
                                     {risk.source_citations.map((c) => {
                                       const cit = r.citations?.[c - 1];
-                                      return <span key={c} className="citation-chip">[{c}] {cit?.doc_name?.substring(0, 18) || "Source"}</span>;
+                                      return <span key={c} className="citation-chip">[{c}] {cit?.doc_name?.substring(0, 16) || "Source"}</span>;
                                     })}
                                   </div>
                                 )}
@@ -468,23 +618,44 @@ export default function ProjectWorkspace({ params }: PageProps) {
                       return (
                         <div>
                           {g.summary && (
-                            <div className="glass-card" style={{ padding: "16px 20px", marginBottom: "20px" }}>
-                              <p style={{ fontSize: "14px", lineHeight: 1.7, color: "var(--color-text-secondary)" }}>{g.summary}</p>
+                            <div className="glass-card" style={{ padding: "18px 22px", marginBottom: "20px" }}>
+                              <p style={{
+                                fontSize: "13.5px", lineHeight: 1.75, color: "var(--color-text-secondary)",
+                                margin: 0,
+                              }}>{g.summary}</p>
                             </div>
                           )}
-                          <div style={{ display: "grid", gap: "12px" }}>
+                          <div style={{ display: "grid", gap: "10px" }}>
                             {g.opportunities?.map((opp, i) => (
-                              <div key={i} className="glass-card" style={{ padding: "20px" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                                  <h4 style={{ fontSize: "15px", fontWeight: 600, color: "var(--color-emerald)" }}>
-                                    <TrendingUp size={14} style={{ verticalAlign: "middle", marginRight: "6px" }} />
+                              <div
+                                key={i}
+                                className="glass-card"
+                                style={{
+                                  padding: "20px 22px",
+                                  borderLeft: "3px solid var(--color-emerald)",
+                                }}
+                              >
+                                <div style={{
+                                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                                  marginBottom: "10px",
+                                }}>
+                                  <h4 style={{
+                                    fontSize: "14px", fontWeight: 600, color: "var(--color-emerald)",
+                                    margin: 0, display: "flex", alignItems: "center", gap: "6px",
+                                  }}>
+                                    <TrendingUp size={14} />
                                     {opp.opportunity_title}
                                   </h4>
-                                  <span className="badge badge-success">{Math.round((opp.confidence_score || 0) * 100)}% confidence</span>
+                                  <span className="badge badge-success">
+                                    {Math.round((opp.confidence_score || 0) * 100)}%
+                                  </span>
                                 </div>
-                                <ul style={{ paddingLeft: "18px", margin: 0 }}>
+                                <ul style={{ paddingLeft: "16px", margin: 0 }}>
                                   {opp.supporting_evidence?.map((ev, j) => (
-                                    <li key={j} style={{ fontSize: "13px", lineHeight: 1.6, color: "var(--color-text-secondary)", marginBottom: "4px" }}>{ev}</li>
+                                    <li key={j} style={{
+                                      fontSize: "13px", lineHeight: 1.65, color: "var(--color-text-secondary)",
+                                      marginBottom: "3px",
+                                    }}>{ev}</li>
                                   ))}
                                 </ul>
                               </div>
@@ -499,38 +670,54 @@ export default function ProjectWorkspace({ params }: PageProps) {
                       const f = analysisResult.result as FinancialAnalysis;
                       return (
                         <div>
-                          <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
-                            <div className="glass-card" style={{ padding: "16px 20px", flex: 1 }}>
-                              <div style={{ fontSize: "12px", color: "var(--color-text-muted)", marginBottom: "4px" }}>Financial Health</div>
-                              <div style={{ fontSize: "20px", fontWeight: 700, color: f.financial_health === "Strong" ? "var(--color-emerald)" : "var(--color-amber)" }}>
+                          <div style={{
+                            display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px",
+                          }}>
+                            <div className="metric-card">
+                              <div className="metric-label">Financial Health</div>
+                              <div
+                                className="metric-value"
+                                style={{
+                                  color: f.financial_health === "Strong"
+                                    ? "var(--color-emerald)"
+                                    : "var(--color-amber)",
+                                }}
+                              >
                                 {f.financial_health}
                               </div>
                             </div>
-                            <div className="glass-card" style={{ padding: "16px 20px", flex: 1 }}>
-                              <div style={{ fontSize: "12px", color: "var(--color-text-muted)", marginBottom: "4px" }}>Metrics Found</div>
-                              <div style={{ fontSize: "20px", fontWeight: 700 }}>{f.metrics?.length || 0}</div>
+                            <div className="metric-card">
+                              <div className="metric-label">Metrics</div>
+                              <div className="metric-value">{f.metrics?.length || 0}</div>
                             </div>
                           </div>
 
                           {f.metrics?.length > 0 && (
-                            <div className="glass-card" style={{ padding: "0", overflow: "hidden", marginBottom: "20px" }}>
-                              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                            <div className="glass-card" style={{
+                              padding: 0, overflow: "hidden", marginBottom: "20px",
+                            }}>
+                              <table className="data-table">
                                 <thead>
-                                  <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                                  <tr>
                                     {["Metric", "Value", "Period", "YoY Change"].map((h) => (
-                                      <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: "12px", fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                                        {h}
-                                      </th>
+                                      <th key={h}>{h}</th>
                                     ))}
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {f.metrics.map((m, i) => (
-                                    <tr key={i} style={{ borderBottom: "1px solid var(--color-border)" }}>
-                                      <td style={{ padding: "12px 16px", fontSize: "14px", fontWeight: 500 }}>{m.metric_name}</td>
-                                      <td style={{ padding: "12px 16px", fontSize: "14px", fontFamily: "var(--font-mono)" }}>{m.value}</td>
-                                      <td style={{ padding: "12px 16px", fontSize: "13px", color: "var(--color-text-muted)" }}>{m.period}</td>
-                                      <td style={{ padding: "12px 16px", fontSize: "14px", fontWeight: 600, color: m.yoy_change?.startsWith("+") ? "var(--color-emerald)" : m.yoy_change?.startsWith("-") ? "var(--color-rose)" : "var(--color-text-secondary)" }}>
+                                    <tr key={i}>
+                                      <td style={{ fontWeight: 500 }}>{m.metric_name}</td>
+                                      <td className="mono">{m.value}</td>
+                                      <td style={{ color: "var(--color-text-muted)", fontSize: "13px" }}>{m.period}</td>
+                                      <td style={{
+                                        fontWeight: 600, fontFamily: "var(--font-mono)", fontSize: "13px",
+                                        color: m.yoy_change?.startsWith("+")
+                                          ? "var(--color-emerald)"
+                                          : m.yoy_change?.startsWith("-")
+                                          ? "var(--color-rose)"
+                                          : "var(--color-text-secondary)",
+                                      }}>
                                         {m.yoy_change}
                                       </td>
                                     </tr>
@@ -541,11 +728,18 @@ export default function ProjectWorkspace({ params }: PageProps) {
                           )}
 
                           {f.key_observations?.length > 0 && (
-                            <div className="glass-card" style={{ padding: "16px 20px" }}>
-                              <h4 style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-text-muted)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px" }}>Key Observations</h4>
-                              <ul style={{ paddingLeft: "18px", margin: 0 }}>
+                            <div className="glass-card" style={{ padding: "18px 22px" }}>
+                              <h4 style={{
+                                fontSize: "11px", fontWeight: 600, fontFamily: "var(--font-mono)",
+                                color: "var(--color-text-muted)", marginBottom: "12px",
+                                textTransform: "uppercase", letterSpacing: "1px",
+                              }}>Key Observations</h4>
+                              <ul style={{ paddingLeft: "16px", margin: 0 }}>
                                 {f.key_observations.map((o, i) => (
-                                  <li key={i} style={{ fontSize: "14px", lineHeight: 1.7, color: "var(--color-text-secondary)", marginBottom: "6px" }}>{o}</li>
+                                  <li key={i} style={{
+                                    fontSize: "13.5px", lineHeight: 1.7, color: "var(--color-text-secondary)",
+                                    marginBottom: "5px",
+                                  }}>{o}</li>
                                 ))}
                               </ul>
                             </div>
@@ -560,18 +754,36 @@ export default function ProjectWorkspace({ params }: PageProps) {
                       return (
                         <div>
                           {s.one_liner && (
-                            <div className="glass-card animate-pulse-glow" style={{ padding: "20px 24px", marginBottom: "20px", borderColor: "rgba(56,189,248,0.2)" }}>
-                              <p style={{ fontSize: "18px", fontWeight: 600, fontStyle: "italic", color: "var(--color-accent)" }}>"{s.one_liner}"</p>
+                            <div
+                              className="glass-card"
+                              style={{
+                                padding: "22px 26px", marginBottom: "20px",
+                                borderLeft: "3px solid var(--color-accent)",
+                                background: "var(--color-accent-glow)",
+                              }}
+                            >
+                              <p style={{
+                                fontSize: "16px", fontWeight: 600, fontStyle: "italic",
+                                color: "var(--color-accent)", lineHeight: 1.5, margin: 0,
+                              }}>
+                                &ldquo;{s.one_liner}&rdquo;
+                              </p>
                             </div>
                           )}
 
-                          <div style={{ display: "grid", gap: "16px" }}>
+                          <div style={{ display: "grid", gap: "12px" }}>
                             {s.sections?.map((sec, i) => (
-                              <div key={i} className="glass-card" style={{ padding: "24px" }}>
-                                <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "12px", color: "var(--color-accent)" }}>
+                              <div key={i} className="glass-card" style={{ padding: "22px 24px" }}>
+                                <h3 style={{
+                                  fontSize: "14px", fontWeight: 700, marginBottom: "10px",
+                                  color: "var(--color-accent)", letterSpacing: "-0.01em",
+                                }}>
                                   {sec.title}
                                 </h3>
-                                <p style={{ fontSize: "14px", lineHeight: 1.8, color: "var(--color-text-secondary)", whiteSpace: "pre-wrap" }}>
+                                <p style={{
+                                  fontSize: "13.5px", lineHeight: 1.8, color: "var(--color-text-secondary)",
+                                  whiteSpace: "pre-wrap", margin: 0,
+                                }}>
                                   {sec.content}
                                 </p>
                               </div>
@@ -579,11 +791,24 @@ export default function ProjectWorkspace({ params }: PageProps) {
                           </div>
 
                           {s.recommendation && (
-                            <div className="glass-card" style={{ padding: "20px", marginTop: "16px", borderColor: "rgba(52,211,153,0.2)" }}>
-                              <h4 style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-emerald)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "1px" }}>
+                            <div
+                              className="glass-card"
+                              style={{
+                                padding: "20px 22px", marginTop: "12px",
+                                borderLeft: "3px solid var(--color-emerald)",
+                              }}
+                            >
+                              <h4 style={{
+                                fontSize: "11px", fontWeight: 600, fontFamily: "var(--font-mono)",
+                                color: "var(--color-emerald)", marginBottom: "10px",
+                                textTransform: "uppercase", letterSpacing: "1px",
+                              }}>
                                 Recommendation
                               </h4>
-                              <p style={{ fontSize: "14px", lineHeight: 1.7, color: "var(--color-text-secondary)" }}>{s.recommendation}</p>
+                              <p style={{
+                                fontSize: "13.5px", lineHeight: 1.7, color: "var(--color-text-secondary)",
+                                margin: 0,
+                              }}>{s.recommendation}</p>
                             </div>
                           )}
                         </div>
@@ -594,27 +819,51 @@ export default function ProjectWorkspace({ params }: PageProps) {
 
                 {/* No results placeholder */}
                 {!analysisResult && !analyzing && (
-                  <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                  <div style={{ textAlign: "center", padding: "80px 20px" }}>
                     {tabs.find(t => t.id === activeTab)?.icon && (() => {
                       const Icon = tabs.find(t => t.id === activeTab)!.icon;
-                      return <Icon size={40} style={{ color: "var(--color-text-muted)", margin: "0 auto 12px" }} />;
+                      return (
+                        <div style={{
+                          width: "52px", height: "52px", borderRadius: "var(--radius-lg)",
+                          background: "var(--color-bg-elevated)", border: "1px solid var(--color-border)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          margin: "0 auto 16px",
+                        }}>
+                          <Icon size={22} style={{ color: "var(--color-text-muted)" }} />
+                        </div>
+                      );
                     })()}
-                    <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>
+                    <h3 style={{
+                      fontSize: "15px", fontWeight: 600, marginBottom: "6px",
+                      letterSpacing: "-0.01em",
+                    }}>
                       No analysis results yet
                     </h3>
-                    <p style={{ fontSize: "13px", color: "var(--color-text-muted)" }}>
-                      Click the button above to run {tabs.find(t => t.id === activeTab)?.label} analysis.
+                    <p style={{
+                      fontSize: "12px", fontFamily: "var(--font-mono)", color: "var(--color-text-muted)",
+                    }}>
+                      Run {tabs.find(t => t.id === activeTab)?.label} analysis to see results.
                     </p>
                   </div>
                 )}
 
                 {/* Loading */}
                 {analyzing && (
-                  <div style={{ textAlign: "center", padding: "60px 20px" }}>
-                    <Loader2 size={32} style={{ color: "var(--color-accent)", animation: "spin 1s linear infinite", margin: "0 auto 16px" }} />
-                    <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Analyzing documents...</h3>
-                    <p style={{ fontSize: "13px", color: "var(--color-text-muted)" }}>
-                      This may take 30-60 seconds with local LLM inference.
+                  <div style={{ textAlign: "center", padding: "80px 20px" }}>
+                    <Loader2 size={28} style={{
+                      color: "var(--color-accent)", animation: "spin 1s linear infinite",
+                      margin: "0 auto 16px", display: "block",
+                    }} />
+                    <h3 style={{
+                      fontSize: "15px", fontWeight: 600, marginBottom: "6px",
+                      letterSpacing: "-0.01em",
+                    }}>
+                      Analyzing documents...
+                    </h3>
+                    <p style={{
+                      fontSize: "12px", fontFamily: "var(--font-mono)", color: "var(--color-text-muted)",
+                    }}>
+                      This may take 30–60 seconds.
                     </p>
                   </div>
                 )}
