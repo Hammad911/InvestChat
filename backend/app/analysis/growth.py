@@ -54,8 +54,6 @@ async def analyze_growth(
         query="growth opportunities market expansion competitive advantage innovation strategy",
         project_id=project_id,
         top_k=20,
-        section_filters=["Business", "Executive Summary", "MD&A", "General"],
-        doc_type_filters=["filing", "presentation", "market_report"],
     )
 
     chunks = expand_parent_context(chunks)

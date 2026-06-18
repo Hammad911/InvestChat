@@ -95,23 +95,6 @@ def route_query(query: str) -> RoutedQuery:
 
 
 def _get_filters(query_type: QueryType) -> tuple[list[str], list[str]]:
-    """Map query type to metadata filters for retrieval."""
-    if query_type == QueryType.RISK_ANALYSIS:
-        return (
-            ["Risk Factors", "Legal Proceedings", "Forward-Looking Statements", "MD&A"],
-            ["filing"],
-        )
-    elif query_type == QueryType.FINANCIAL_METRICS:
-        return (
-            ["Financial Statements", "MD&A", "Selected Financial Data", "Table", "Footnotes"],
-            ["filing", "financial"],
-        )
-    elif query_type == QueryType.GROWTH_OPPORTUNITIES:
-        return (
-            ["Business", "Executive Summary", "MD&A", "General"],
-            ["filing", "presentation", "market_report"],
-        )
-    elif query_type == QueryType.COMPARISON:
-        return ([], [])  # No filters — search across all docs
-    else:
-        return ([], [])
+    """Map query type to metadata filters for retrieval.
+    Disabled strict filtering to allow analysis on auto-detected documents."""
+    return ([], [])

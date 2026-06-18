@@ -62,8 +62,6 @@ async def analyze_financials(
         query="revenue profit margin EBITDA net income cash flow financial results earnings",
         project_id=project_id,
         top_k=20,
-        section_filters=["Financial Statements", "MD&A", "Selected Financial Data", "Table", "Footnotes"],
-        doc_type_filters=["filing", "financial"],
     )
 
     chunks = expand_parent_context(chunks)
