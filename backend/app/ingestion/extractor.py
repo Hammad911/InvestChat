@@ -5,8 +5,12 @@ Handles PDF, DOCX, PPTX, XLSX, and TXT files — all processing is local.
 from __future__ import annotations
 
 import io
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+
+# pdfplumber can hit recursion limits on complex PDFs with nested crops
+sys.setrecursionlimit(3000)
 
 from app.core.logging import get_logger
 
@@ -108,7 +112,21 @@ def _extract_pdf(file_bytes: bytes, filename: str) -> ExtractionResult:
                 except Exception:
                     pass
 
-            raw_text = text_page.extract_text(x_tolerance=2, y_tolerance=2)
+            try:
+                raw_text = text_page.extract_text(x_tolerance=2, y_tolerance=2)
+            except RecursionError:
+                # Some PDFs cause infinite recursion in pdfplumber's
+                # cropped page objects — fall back to the full page text
+                logger.warning(
+                    "pdfplumber_recursion_fallback",
+                    page=page_num,
+                    msg="Falling back to full page text extraction",
+                )
+                try:
+                    raw_text = page.extract_text(x_tolerance=2, y_tolerance=2)
+                except RecursionError:
+                    raw_text = None
+
             if raw_text:
                 # Split into paragraphs / lines and classify
                 for line in raw_text.split("\n"):
