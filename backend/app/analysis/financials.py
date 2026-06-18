@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 
-import httpx
+from google import genai
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -80,19 +80,18 @@ async def analyze_financials(
             "citations": [],
         }
 
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
     prompt = FINANCIALS_PROMPT.format(context=context_str)
-    response = httpx.post(
-        f"{settings.OLLAMA_BASE_URL}/api/generate",
-        json={
-            "model": settings.OLLAMA_LLM_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {"temperature": 0.1, "num_predict": 2000},
-        },
-        timeout=settings.OLLAMA_REQUEST_TIMEOUT,
+    
+    response = client.models.generate_content(
+        model=settings.GEMINI_LLM_MODEL,
+        contents=prompt,
+        config=genai.types.GenerateContentConfig(
+            temperature=0.1,
+            response_mime_type="application/json",
+        ),
     )
-    response.raise_for_status()
-    raw_output = response.json().get("response", "")
+    raw_output = response.text
 
     try:
         json_start = raw_output.find("{")
@@ -105,7 +104,7 @@ async def analyze_financials(
         result = {"metrics": [], "summary": raw_output}
 
     result["citations"] = citations
-    result["model_used"] = settings.OLLAMA_LLM_MODEL
+    result["model_used"] = settings.GEMINI_LLM_MODEL
     result["analyzed_at"] = datetime.now(timezone.utc).isoformat()
 
     logger.info(

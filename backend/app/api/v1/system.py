@@ -25,7 +25,7 @@ class ServiceStatus(BaseModel):
 class HealthResponse(BaseModel):
     status: str  # "healthy" | "degraded" | "unhealthy"
     services: list[ServiceStatus]
-    ollama_model: str | None = None
+    llm_model: str | None = None
     embed_model: str | None = None
 
 
@@ -34,42 +34,25 @@ async def health_check():
     """Check connectivity and status of all services."""
     services: list[ServiceStatus] = []
     overall_healthy = True
-    ollama_model = None
+    llm_model = None
     embed_model = None
 
-    # ── Ollama ────────────────────────────────────────────────────────
+    # ── Gemini ────────────────────────────────────────────────────────
     try:
-        resp = httpx.get(
-            f"{settings.OLLAMA_BASE_URL}/api/tags",
-            timeout=5,
-        )
-        resp.raise_for_status()
-        models = resp.json().get("models", [])
-        model_names = [m.get("name", "") for m in models]
-
-        llm_ready = any(settings.OLLAMA_LLM_MODEL in n for n in model_names)
-        embed_ready = any(settings.OLLAMA_EMBED_MODEL in n for n in model_names)
-
-        if llm_ready and embed_ready:
-            ollama_status = "healthy"
-            ollama_model = settings.OLLAMA_LLM_MODEL
-            embed_model = settings.OLLAMA_EMBED_MODEL
-        else:
-            ollama_status = "degraded"
-            overall_healthy = False
-
+        from google import genai
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        client.models.get(model=settings.GEMINI_LLM_MODEL)
+        
         services.append(ServiceStatus(
-            name="ollama",
-            status=ollama_status,
-            details={
-                "models_available": model_names,
-                "llm_model_ready": llm_ready,
-                "embed_model_ready": embed_ready,
-            },
+            name="gemini",
+            status="healthy",
+            details={"message": "Connected to Gemini API"},
         ))
+        llm_model = settings.GEMINI_LLM_MODEL
+        embed_model = settings.GEMINI_EMBED_MODEL
     except Exception as e:
         services.append(ServiceStatus(
-            name="ollama", status="unhealthy", details={"error": str(e)}
+            name="gemini", status="unhealthy", details={"error": str(e)}
         ))
         overall_healthy = False
 
@@ -129,6 +112,6 @@ async def health_check():
     return HealthResponse(
         status="healthy" if overall_healthy else "degraded",
         services=services,
-        ollama_model=ollama_model,
+        llm_model=llm_model,
         embed_model=embed_model,
     )

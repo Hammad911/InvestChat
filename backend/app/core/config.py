@@ -15,11 +15,10 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # ── Ollama ───────────────────────────────────────────────────────────
-    OLLAMA_BASE_URL: str = "http://ollama:11434"
-    OLLAMA_LLM_MODEL: str = "mistral:7b"
-    OLLAMA_EMBED_MODEL: str = "nomic-embed-text"
-    OLLAMA_REQUEST_TIMEOUT: int = 300
+    # ── Gemini API ───────────────────────────────────────────────────────
+    GEMINI_API_KEY: str = ""
+    GEMINI_LLM_MODEL: str = "gemini-2.5-flash"
+    GEMINI_EMBED_MODEL: str = "text-embedding-004"
 
     # ── PostgreSQL ───────────────────────────────────────────────────────
     POSTGRES_USER: str = "ddcopilot"

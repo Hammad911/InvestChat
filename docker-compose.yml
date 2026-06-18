@@ -7,37 +7,6 @@
 # ══════════════════════════════════════════════════════════════════════════════
 
 services:
-  # ── Ollama: Local LLM Inference Server ─────────────────────────────────────
-  ollama:
-    image: ollama/ollama:latest
-    container_name: dd-ollama
-    volumes:
-      - ollama_data:/root/.ollama
-      - ./ollama/entrypoint.sh:/entrypoint.sh
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
-    environment:
-      - OLLAMA_LLM_MODEL=${OLLAMA_LLM_MODEL:-mistral:7b}
-      - OLLAMA_EMBED_MODEL=${OLLAMA_EMBED_MODEL:-nomic-embed-text}
-    ports:
-      - "11434:11434"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 180s
-    networks:
-      - ddcopilot
-    restart: unless-stopped
-    # ── Uncomment for NVIDIA GPU acceleration ──
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
-
   # ── PostgreSQL 16: Relational Database ─────────────────────────────────────
   postgres:
     image: postgres:16-alpine
@@ -49,7 +18,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ddcopilot} -d ${POSTGRES_DB:-ddcopilot}"]
       interval: 10s
@@ -69,12 +38,6 @@ services:
     ports:
       - "6333:6333"
       - "6334:6334"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     networks:
       - ddcopilot
     restart: unless-stopped
@@ -139,12 +102,10 @@ services:
     env_file:
       - .env
     depends_on:
-      ollama:
-        condition: service_healthy
       postgres:
         condition: service_healthy
       qdrant:
-        condition: service_healthy
+        condition: service_started
       redis:
         condition: service_healthy
       minio:
@@ -170,12 +131,10 @@ services:
     env_file:
       - .env
     depends_on:
-      ollama:
-        condition: service_healthy
       postgres:
         condition: service_healthy
       qdrant:
-        condition: service_healthy
+        condition: service_started
       redis:
         condition: service_healthy
       minio:
@@ -208,8 +167,6 @@ services:
 
 # ── Volumes ──────────────────────────────────────────────────────────────────
 volumes:
-  ollama_data:
-    name: dd-ollama-data
   postgres_data:
     name: dd-postgres-data
   qdrant_data:

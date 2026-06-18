@@ -338,6 +338,12 @@ body {
   50% { box-shadow: 0 0 25px rgba(56, 189, 248, 0.25); }
 }
 
+@keyframes progress-pulse {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
 .animate-fade-in { animation: fade-in 0.4s ease forwards; }
 .animate-slide-up { animation: slide-up 0.5s ease forwards; }
 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+.animate-progress { animation: progress-pulse 1.5s infinite ease-in-out; }

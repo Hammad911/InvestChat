@@ -13,7 +13,7 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.models import Document, IngestionEvent, IngestionStatus
 from app.ingestion.chunker import chunk_document
-from app.ingestion.embedder import embed_and_store
+from app.ingestion.embedder import embed_and_store, ensure_collection
 from app.ingestion.extractor import extract_document
 from app.storage.minio_client import download_file
 
@@ -61,8 +61,12 @@ def run_ingestion_pipeline(document_id: str) -> None:
     try:
         doc = db.query(Document).filter(Document.id == document_id).first()
         if not doc:
-            logger.error("document_not_found", document_id=document_id)
-            return
+            logger.warning(
+                "document_not_found_skipping",
+                document_id=document_id,
+                message="Document no longer exists in DB — stale task, skipping safely."
+            )
+            return  # Stale task — document was deleted before processing completed
 
         logger.info(
             "pipeline_start",
@@ -112,8 +116,9 @@ def run_ingestion_pipeline(document_id: str) -> None:
 
         # ── Stage 4: Embed ───────────────────────────────────────────
         _update_status(db, document_id, IngestionStatus.EMBEDDING)
-        _log_event(db, document_id, "embedding", "started", "Generating embeddings via Ollama")
+        _log_event(db, document_id, "embedding", "started", "Generating embeddings via Gemini")
 
+        ensure_collection()
         points_stored = embed_and_store(chunks)
 
         _log_event(

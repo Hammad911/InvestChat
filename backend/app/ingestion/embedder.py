@@ -1,5 +1,5 @@
 """
-Embedding and vector storage via Ollama (nomic-embed-text) + Qdrant.
+Embedding and vector storage via Gemini API (text-embedding-004) + Qdrant.
 Handles both dense embeddings and BM25 sparse vectors.
 """
 from __future__ import annotations
@@ -9,7 +9,7 @@ import math
 import re
 from collections import Counter
 
-import httpx
+from google import genai
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
@@ -28,7 +28,7 @@ from app.ingestion.chunker import Chunk
 
 logger = get_logger(__name__)
 
-EMBED_DIM = 768  # nomic-embed-text output dimensions
+EMBED_DIM = 3072  # gemini-embedding-2 output dimensions
 BATCH_SIZE = 32
 
 
@@ -57,20 +57,65 @@ def ensure_collection() -> None:
 
 
 def _get_dense_embeddings(texts: list[str]) -> list[list[float]]:
-    """Get dense embeddings from Ollama's nomic-embed-text model."""
-    embeddings = []
+    """Get dense embeddings via direct REST call to the Gemini API.
+    
+    Uses httpx directly to avoid google-genai SDK version issues.
+    Includes retry with exponential backoff for 429 rate limit errors.
+    """
+    import httpx
+    import time
+
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{settings.GEMINI_EMBED_MODEL}:batchEmbedContents"
+        f"?key={settings.GEMINI_API_KEY}"
+    )
+
+    embeddings: list[list[float]] = []
+
     for i in range(0, len(texts), BATCH_SIZE):
         batch = texts[i : i + BATCH_SIZE]
-        response = httpx.post(
-            f"{settings.OLLAMA_BASE_URL}/api/embed",
-            json={"model": settings.OLLAMA_EMBED_MODEL, "input": batch},
-            timeout=settings.OLLAMA_REQUEST_TIMEOUT,
-        )
-        response.raise_for_status()
+        payload = {
+            "requests": [
+                {
+                    "model": f"models/{settings.GEMINI_EMBED_MODEL}",
+                    "content": {"parts": [{"text": t}]},
+                }
+                for t in batch
+            ]
+        }
+
+        # Retry with exponential backoff on 429
+        max_retries = 5
+        for attempt in range(max_retries):
+            response = httpx.post(url, json=payload, timeout=60.0)
+            if response.status_code == 429:
+                wait = min(2 ** attempt * 2, 60)  # 2s, 4s, 8s, 16s, 32s
+                logger.warning(
+                    "rate_limited",
+                    batch_index=i,
+                    attempt=attempt + 1,
+                    wait_seconds=wait,
+                )
+                time.sleep(wait)
+                continue
+            response.raise_for_status()
+            break
+        else:
+            # All retries exhausted
+            response.raise_for_status()
+
         data = response.json()
-        embeddings.extend(data["embeddings"])
+        for embedding_obj in data.get("embeddings", []):
+            embeddings.append(embedding_obj["values"])
         logger.debug("embeddings_batch", batch_index=i, batch_size=len(batch))
+
+        # Throttle between batches to stay within rate limits
+        if i + BATCH_SIZE < len(texts):
+            time.sleep(1.5)
+
     return embeddings
+
 
 
 def _tokenize(text: str) -> list[str]:

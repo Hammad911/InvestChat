@@ -136,7 +136,7 @@ export interface ServiceStatus {
 export interface HealthResponse {
   status: string;
   services: ServiceStatus[];
-  ollama_model: string | null;
+  llm_model: string | null;
   embed_model: string | null;
 }
 

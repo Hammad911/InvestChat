@@ -69,6 +69,19 @@ export default function ProjectWorkspace({ params }: PageProps) {
     loadProject();
   }, [projectId]);
 
+  // Polling for pending documents
+  useEffect(() => {
+    const hasPending = documents.some(
+      (d) => d.ingestion_status === "pending" || d.ingestion_status === "processing"
+    );
+    if (!hasPending) return;
+    
+    const interval = setInterval(() => {
+      getDocuments(projectId).then(res => setDocuments(res.documents)).catch(() => {});
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [projectId, documents]);
+
   const loadProject = async () => {
     try {
       const [proj, docs, chatRes] = await Promise.all([
@@ -265,6 +278,13 @@ export default function ProjectWorkspace({ params }: PageProps) {
                     <IngestionIcon s={doc.ingestion_status} />
                     <span>{doc.chunk_count > 0 ? `${doc.chunk_count} chunks` : doc.ingestion_status}</span>
                   </div>
+                  
+                  {/* Progress bar */}
+                  {(doc.ingestion_status === "pending" || doc.ingestion_status === "processing") && (
+                    <div style={{ height: "3px", width: "100%", background: "var(--color-bg-card)", borderRadius: "3px", overflow: "hidden", marginTop: "6px" }}>
+                      <div className="animate-progress" style={{ height: "100%", width: "50%", background: "var(--color-accent)", borderRadius: "3px" }} />
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteDocument(projectId, doc.id).then(loadProject); }}

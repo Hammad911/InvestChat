@@ -13,8 +13,10 @@ from qdrant_client.models import (
     Filter,
     MatchAny,
     MatchValue,
+    NamedSparseVector,
     SearchParams,
     SearchRequest,
+    SparseVector,
 )
 
 from app.core.config import settings
@@ -42,14 +44,19 @@ class RetrievedChunk:
 
 
 def _get_query_embedding(query: str) -> list[float]:
-    """Get dense embedding for a query via Ollama."""
-    response = httpx.post(
-        f"{settings.OLLAMA_BASE_URL}/api/embed",
-        json={"model": settings.OLLAMA_EMBED_MODEL, "input": [query]},
-        timeout=settings.OLLAMA_REQUEST_TIMEOUT,
+    """Get dense embedding for a query via Gemini REST API."""
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{settings.GEMINI_EMBED_MODEL}:embedContent"
+        f"?key={settings.GEMINI_API_KEY}"
     )
+    payload = {
+        "model": f"models/{settings.GEMINI_EMBED_MODEL}",
+        "content": {"parts": [{"text": query}]},
+    }
+    response = httpx.post(url, json=payload, timeout=30.0)
     response.raise_for_status()
-    return response.json()["embeddings"][0]
+    return response.json()["embedding"]["values"]
 
 
 def _build_filter(
@@ -128,7 +135,10 @@ def sparse_search(
 
     results = client.search(
         collection_name=settings.QDRANT_COLLECTION,
-        query_vector=("bm25", sparse_vector),
+        query_vector=NamedSparseVector(
+            name="bm25",
+            vector=sparse_vector,
+        ),
         query_filter=qfilter,
         limit=top_k,
         with_payload=True,

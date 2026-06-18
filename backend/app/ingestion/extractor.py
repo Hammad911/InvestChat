@@ -5,7 +5,6 @@ Handles PDF, DOCX, PPTX, XLSX, and TXT files — all processing is local.
 from __future__ import annotations
 
 import io
-import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -55,76 +54,79 @@ def extract_document(file_bytes: bytes, filename: str) -> ExtractionResult:
 
 
 def _extract_pdf(file_bytes: bytes, filename: str) -> ExtractionResult:
-    """Extract from PDF using unstructured + pdfplumber for tables."""
-    from unstructured.partition.pdf import partition_pdf
+    """Extract from PDF using pdfplumber for text and tables."""
     import pdfplumber
 
     elements: list[ExtractedElement] = []
     tables: list[dict] = []
 
-    # Use unstructured for layout-aware text extraction
-    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-        tmp.write(file_bytes)
-        tmp_path = tmp.name
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        page_count = len(pdf.pages)
 
-    try:
-        raw_elements = partition_pdf(
-            filename=tmp_path,
-            strategy="fast",  # Use fast strategy for local inference
-            include_page_breaks=True,
-        )
-
-        page_num = 1
-        for el in raw_elements:
-            if hasattr(el, "metadata") and hasattr(el.metadata, "page_number"):
-                page_num = el.metadata.page_number or page_num
-
-            el_type = type(el).__name__.lower()
-            if "title" in el_type:
-                etype = "title"
-            elif "table" in el_type:
-                etype = "table"
-            elif "listitem" in el_type or "list" in el_type:
-                etype = "list_item"
-            elif "header" in el_type:
-                etype = "header"
-            elif "footer" in el_type:
-                etype = "footer"
-            else:
-                etype = "narrative"
-
-            text = str(el).strip()
-            if text:
-                elements.append(ExtractedElement(
-                    text=text,
-                    element_type=etype,
-                    page_number=page_num,
-                ))
-
-        # Use pdfplumber for structured table extraction
-        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-            page_count = len(pdf.pages)
-            for i, page in enumerate(pdf.pages, 1):
-                page_tables = page.extract_tables()
-                for t_idx, table in enumerate(page_tables):
-                    if table and len(table) > 1:
-                        # First row as headers, rest as data
-                        headers = [str(h or "").strip() for h in table[0]]
-                        rows = []
-                        for row in table[1:]:
-                            rows.append({
-                                headers[j]: str(cell or "").strip()
-                                for j, cell in enumerate(row)
-                                if j < len(headers)
-                            })
-                        tables.append({
-                            "page_number": i,
-                            "table_index": t_idx,
-                            "headers": headers,
-                            "rows": rows,
+        for page_num, page in enumerate(pdf.pages, 1):
+            # ── Extract structured tables first ───────────────────────
+            page_tables = page.extract_tables()
+            table_bboxes = []
+            for t_idx, table in enumerate(page_tables):
+                if table and len(table) > 1:
+                    headers = [str(h or "").strip() for h in table[0]]
+                    rows = []
+                    for row in table[1:]:
+                        rows.append({
+                            headers[j]: str(cell or "").strip()
+                            for j, cell in enumerate(row)
+                            if j < len(headers)
                         })
-    finally:
-        Path(tmp_path).unlink(missing_ok=True)
+                    tables.append({
+                        "page_number": page_num,
+                        "table_index": t_idx,
+                        "headers": headers,
+                        "rows": rows,
+                    })
+                    # Build a text representation of the table too
+                    table_text = "\n".join(
+                        " | ".join(str(cell or "") for cell in row)
+                        for row in table
+                    )
+                    if table_text.strip():
+                        elements.append(ExtractedElement(
+                            text=table_text.strip(),
+                            element_type="table",
+                            page_number=page_num,
+                        ))
+                    # Track the bounding boxes so we don't double-extract
+                    if hasattr(page, "find_tables"):
+                        for t in page.find_tables():
+                            table_bboxes.append(t.bbox)
+
+            # ── Extract narrative text outside of tables ───────────────
+            # Crop out table regions to avoid duplicating content
+            text_page = page
+            for bbox in table_bboxes:
+                try:
+                    text_page = text_page.outside_bbox(bbox)
+                except Exception:
+                    pass
+
+            raw_text = text_page.extract_text(x_tolerance=2, y_tolerance=2)
+            if raw_text:
+                # Split into paragraphs / lines and classify
+                for line in raw_text.split("\n"):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    # Heuristic: short ALL-CAPS lines or very short lines are titles
+                    if len(line) < 80 and (line.isupper() or line.endswith(":")):
+                        etype = "title"
+                    elif line.startswith(("•", "-", "*", "–", "◦")):
+                        etype = "list_item"
+                    else:
+                        etype = "narrative"
+                    elements.append(ExtractedElement(
+                        text=line,
+                        element_type=etype,
+                        page_number=page_num,
+                    ))
 
     logger.info(
         "extraction_complete",

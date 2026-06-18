@@ -125,7 +125,7 @@ export default function DashboardPage() {
             >
               <Activity size={14} style={{ color: "var(--color-accent)" }} />
               <span style={{ color: "var(--color-text-muted)" }}>
-                {health.ollama_model || "No model"}
+                {health.llm_model || "No model"}
               </span>
               <StatusIcon s={health.status} />
             </div>

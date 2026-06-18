@@ -15,10 +15,7 @@ psycopg2-binary==2.9.10
 alembic==1.15.2
 
 # ── LLM & RAG ───────────────────────────────────────────────────────────────
-llama-index-core==0.12.37
-llama-index-llms-ollama==0.5.2
-llama-index-embeddings-ollama==0.5.1
-llama-index-vector-stores-qdrant==0.4.8
+google-genai==0.3.0
 
 # ── Vector Database ──────────────────────────────────────────────────────────
 qdrant-client==1.14.2
@@ -30,13 +27,15 @@ torch==2.7.1
 # ── Document Parsing ─────────────────────────────────────────────────────────
 unstructured==0.17.2
 pdfplumber==0.11.6
+pi_heif==0.21.0
+pdf2image==1.17.0
 python-docx==1.1.2
 python-pptx==1.0.2
 openpyxl==3.1.5
 
 # ── Task Queue ───────────────────────────────────────────────────────────────
 celery[redis]==5.5.2
-redis==6.2.0
+redis==5.2.1
 
 # ── Object Storage ───────────────────────────────────────────────────────────
 minio==7.2.16

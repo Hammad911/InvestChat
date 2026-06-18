@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from collections.abc import AsyncGenerator
 
-import httpx
+from google import genai
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -79,19 +79,16 @@ async def chat_completion(
         question=question,
     )
 
-    response = httpx.post(
-        f"{settings.OLLAMA_BASE_URL}/api/generate",
-        json={
-            "model": settings.OLLAMA_LLM_MODEL,
-            "system": CHAT_SYSTEM_PROMPT,
-            "prompt": prompt,
-            "stream": False,
-            "options": {"temperature": 0.3, "num_predict": 1500},
-        },
-        timeout=settings.OLLAMA_REQUEST_TIMEOUT,
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    response = client.models.generate_content(
+        model=settings.GEMINI_LLM_MODEL,
+        contents=prompt,
+        config=genai.types.GenerateContentConfig(
+            temperature=0.3,
+            system_instruction=CHAT_SYSTEM_PROMPT,
+        ),
     )
-    response.raise_for_status()
-    answer = response.json().get("response", "")
+    answer = response.text
 
     logger.info("chat_complete", project_id=project_id, answer_len=len(answer))
 
@@ -99,7 +96,7 @@ async def chat_completion(
         "answer": answer,
         "citations": citations,
         "query_type": routed.query_type.value,
-        "model_used": settings.OLLAMA_LLM_MODEL,
+        "model_used": settings.GEMINI_LLM_MODEL,
     }
 
 
@@ -146,28 +143,19 @@ async def chat_stream(
     yield f"data: {json.dumps({'type': 'citations', 'citations': citations})}\n\n"
 
     # Stream LLM response
-    async with httpx.AsyncClient(timeout=settings.OLLAMA_REQUEST_TIMEOUT) as client:
-        async with client.stream(
-            "POST",
-            f"{settings.OLLAMA_BASE_URL}/api/generate",
-            json={
-                "model": settings.OLLAMA_LLM_MODEL,
-                "system": CHAT_SYSTEM_PROMPT,
-                "prompt": prompt,
-                "stream": True,
-                "options": {"temperature": 0.3, "num_predict": 1500},
-            },
-        ) as resp:
-            async for line in resp.aiter_lines():
-                if line:
-                    try:
-                        data = json.loads(line)
-                        token = data.get("response", "")
-                        if token:
-                            yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
-                        if data.get("done"):
-                            yield f"data: {json.dumps({'type': 'done'})}\n\n"
-                    except json.JSONDecodeError:
-                        continue
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    response_stream = client.models.generate_content_stream(
+        model=settings.GEMINI_LLM_MODEL,
+        contents=prompt,
+        config=genai.types.GenerateContentConfig(
+            temperature=0.3,
+            system_instruction=CHAT_SYSTEM_PROMPT,
+        ),
+    )
+    for chunk in response_stream:
+        if chunk.text:
+            yield f"data: {json.dumps({'type': 'token', 'content': chunk.text})}\n\n"
+    
+    yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
     yield "data: [DONE]\n\n"
