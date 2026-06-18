@@ -27,7 +27,7 @@ services:
         sync: false
       - key: MINIO_BUCKET_NAME
         value: "investchat"
-      - key: CORS_ORIGINS
+      - key: BACKEND_CORS_ORIGINS
         sync: false
 
   - type: worker
