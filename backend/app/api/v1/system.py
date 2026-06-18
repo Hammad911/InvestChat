@@ -58,7 +58,13 @@ async def health_check():
 
     # ── Qdrant ────────────────────────────────────────────────────────
     try:
-        resp = httpx.get(f"http://{settings.QDRANT_HOST}:{settings.QDRANT_PORT}/healthz", timeout=5)
+        if settings.QDRANT_URL and settings.QDRANT_API_KEY:
+            url = f"{settings.QDRANT_URL.rstrip('/')}/healthz"
+            headers = {"api-key": settings.QDRANT_API_KEY}
+            resp = httpx.get(url, headers=headers, timeout=5)
+        else:
+            resp = httpx.get(f"http://{settings.QDRANT_HOST}:{settings.QDRANT_PORT}/healthz", timeout=5)
+            
         services.append(ServiceStatus(
             name="qdrant", status="healthy" if resp.status_code == 200 else "unhealthy"
         ))

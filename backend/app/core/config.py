@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     MINIO_ENDPOINT: str = "minio:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin"
-    MINIO_BUCKET: str = "dd-documents"
+    MINIO_BUCKET_NAME: str = "investchat"
     MINIO_SECURE: bool = False
 
     def model_post_init(self, __context) -> None:

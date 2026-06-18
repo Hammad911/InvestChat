@@ -27,11 +27,11 @@ def _get_client() -> Minio:
 def ensure_bucket() -> None:
     """Create the default bucket if it doesn't exist."""
     client = _get_client()
-    if not client.bucket_exists(settings.MINIO_BUCKET):
-        client.make_bucket(settings.MINIO_BUCKET)
-        logger.info("minio_bucket_created", bucket=settings.MINIO_BUCKET)
+    if not client.bucket_exists(settings.MINIO_BUCKET_NAME):
+        client.make_bucket(settings.MINIO_BUCKET_NAME)
+        logger.info("minio_bucket_created", bucket=settings.MINIO_BUCKET_NAME)
     else:
-        logger.info("minio_bucket_exists", bucket=settings.MINIO_BUCKET)
+        logger.info("minio_bucket_exists", bucket=settings.MINIO_BUCKET_NAME)
 
 
 def upload_file(
@@ -43,7 +43,7 @@ def upload_file(
     """Upload a file to MinIO. Returns the object path."""
     client = _get_client()
     client.put_object(
-        bucket_name=settings.MINIO_BUCKET,
+        bucket_name=settings.MINIO_BUCKET_NAME,
         object_name=object_name,
         data=data,
         length=length,
@@ -56,7 +56,7 @@ def upload_file(
 def download_file(object_name: str) -> bytes:
     """Download a file from MinIO. Returns raw bytes."""
     client = _get_client()
-    response = client.get_object(settings.MINIO_BUCKET, object_name)
+    response = client.get_object(settings.MINIO_BUCKET_NAME, object_name)
     try:
         return response.read()
     finally:
@@ -67,7 +67,7 @@ def download_file(object_name: str) -> bytes:
 def delete_file(object_name: str) -> None:
     """Delete a file from MinIO."""
     client = _get_client()
-    client.remove_object(settings.MINIO_BUCKET, object_name)
+    client.remove_object(settings.MINIO_BUCKET_NAME, object_name)
     logger.info("minio_file_deleted", object_name=object_name)
 
 
@@ -77,7 +77,7 @@ def get_presigned_url(object_name: str, expires_hours: int = 1) -> str:
 
     client = _get_client()
     return client.presigned_get_object(
-        settings.MINIO_BUCKET,
+        settings.MINIO_BUCKET_NAME,
         object_name,
         expires=timedelta(hours=expires_hours),
     )
@@ -87,7 +87,12 @@ def check_health() -> bool:
     """Check MinIO connectivity."""
     try:
         client = _get_client()
-        client.bucket_exists(settings.MINIO_BUCKET)
+        if not client.bucket_exists(settings.MINIO_BUCKET_NAME):
+            # Attempt to create the bucket if missing
+            try:
+                client.make_bucket(settings.MINIO_BUCKET_NAME)
+            except Exception:
+                return False
         return True
     except Exception:
         return False
