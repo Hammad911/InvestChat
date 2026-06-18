@@ -1,0 +1,87 @@
+services:
+  - type: web
+    name: investchat-api
+    env: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    region: ohio
+    plan: free
+    buildCommand: "" # Handled by Dockerfile
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MINIO_ENDPOINT
+        sync: false
+      - key: MINIO_ACCESS_KEY
+        sync: false
+      - key: MINIO_SECRET_KEY
+        sync: false
+      - key: MINIO_BUCKET_NAME
+        value: "investchat"
+      - key: CORS_ORIGINS
+        sync: false
+
+  - type: worker
+    name: investchat-worker
+    env: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    region: ohio
+    plan: starter # Background workers do not have a free tier on Render
+    buildCommand: ""
+    startCommand: "celery -A app.tasks.ingestion_tasks worker --loglevel=info --concurrency=2"
+    envVars:
+      - key: DATABASE_URL
+        fromService:
+          type: web
+          name: investchat-api
+          envVarKey: DATABASE_URL
+      - key: REDIS_URL
+        fromService:
+          type: web
+          name: investchat-api
+          envVarKey: REDIS_URL
+      - key: QDRANT_URL
+        fromService:
+          type: web
+          name: investchat-api
+          envVarKey: QDRANT_URL
+      - key: QDRANT_API_KEY
+        fromService:
+          type: web
+          name: investchat-api
+          envVarKey: QDRANT_API_KEY
+      - key: GEMINI_API_KEY
+        fromService:
+          type: web
+          name: investchat-api
+          envVarKey: GEMINI_API_KEY
+      - key: MINIO_ENDPOINT
+        fromService:
+          type: web
+          name: investchat-api
+          envVarKey: MINIO_ENDPOINT
+      - key: MINIO_ACCESS_KEY
+        fromService:
+          type: web
+          name: investchat-api
+          envVarKey: MINIO_ACCESS_KEY
+      - key: MINIO_SECRET_KEY
+        fromService:
+          type: web
+          name: investchat-api
+          envVarKey: MINIO_SECRET_KEY
+      - key: MINIO_BUCKET_NAME
+        fromService:
+          type: web
+          name: investchat-api
+          envVarKey: MINIO_BUCKET_NAME
