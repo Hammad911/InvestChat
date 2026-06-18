@@ -40,6 +40,9 @@ class Settings(BaseSettings):
             self.DATABASE_URL = self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
             # asyncpg requires 'ssl' instead of 'sslmode'
             self.DATABASE_URL = self.DATABASE_URL.replace("sslmode=require", "ssl=require")
+            # asyncpg does not support channel_binding
+            self.DATABASE_URL = self.DATABASE_URL.replace("&channel_binding=require", "")
+            self.DATABASE_URL = self.DATABASE_URL.replace("?channel_binding=require", "?")
 
         if not self.DATABASE_URL_SYNC:
             self.DATABASE_URL_SYNC = (
