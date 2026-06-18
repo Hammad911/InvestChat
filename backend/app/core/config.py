@@ -73,6 +73,9 @@ class Settings(BaseSettings):
         # Automatically use secure for remote buckets like Cloudflare R2
         if "cloudflarestorage.com" in self.MINIO_ENDPOINT or "amazonaws.com" in self.MINIO_ENDPOINT:
             self.MINIO_SECURE = True
+            
+        # MinIO python SDK crashes if endpoint contains http:// or https://
+        self.MINIO_ENDPOINT = self.MINIO_ENDPOINT.replace("https://", "").replace("http://", "").rstrip("/")
 
     # ── JWT ──────────────────────────────────────────────────────────────
     JWT_SECRET_KEY: str = "change-this-to-a-long-random-string-in-production"
