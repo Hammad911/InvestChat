@@ -1,5 +1,5 @@
 """
-Embedding and vector storage via Gemini API (text-embedding-004) + Qdrant.
+Embedding and vector storage via local sentence-transformers + Qdrant.
 Handles both dense embeddings and BM25 sparse vectors.
 """
 from __future__ import annotations
@@ -9,7 +9,6 @@ import math
 import re
 from collections import Counter
 
-from google import genai
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
@@ -28,8 +27,20 @@ from app.ingestion.chunker import Chunk
 
 logger = get_logger(__name__)
 
-EMBED_DIM = 3072  # gemini-embedding-2 output dimensions
+EMBED_DIM = 768  # all-mpnet-base-v2 output dimensions
 BATCH_SIZE = 32
+_EMBED_MODEL = None  # Lazy-loaded singleton
+
+
+def _get_model():
+    """Lazy-load the sentence-transformers model (singleton)."""
+    global _EMBED_MODEL
+    if _EMBED_MODEL is None:
+        from sentence_transformers import SentenceTransformer
+        logger.info("loading_embedding_model", model="all-mpnet-base-v2")
+        _EMBED_MODEL = SentenceTransformer("all-mpnet-base-v2")
+        logger.info("embedding_model_loaded", model="all-mpnet-base-v2")
+    return _EMBED_MODEL
 
 
 def get_qdrant_client() -> QdrantClient:
@@ -57,64 +68,14 @@ def ensure_collection() -> None:
 
 
 def _get_dense_embeddings(texts: list[str]) -> list[list[float]]:
-    """Get dense embeddings via direct REST call to the Gemini API.
+    """Get dense embeddings using local sentence-transformers model.
     
-    Uses httpx directly to avoid google-genai SDK version issues.
-    Includes retry with exponential backoff for 429 rate limit errors.
+    Runs entirely locally — no API calls, no rate limits.
     """
-    import httpx
-    import time
-
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{settings.GEMINI_EMBED_MODEL}:batchEmbedContents"
-        f"?key={settings.GEMINI_API_KEY}"
-    )
-
-    embeddings: list[list[float]] = []
-
-    for i in range(0, len(texts), BATCH_SIZE):
-        batch = texts[i : i + BATCH_SIZE]
-        payload = {
-            "requests": [
-                {
-                    "model": f"models/{settings.GEMINI_EMBED_MODEL}",
-                    "content": {"parts": [{"text": t}]},
-                }
-                for t in batch
-            ]
-        }
-
-        # Retry with exponential backoff on 429
-        max_retries = 5
-        for attempt in range(max_retries):
-            response = httpx.post(url, json=payload, timeout=60.0)
-            if response.status_code == 429:
-                wait = min(2 ** attempt * 2, 60)  # 2s, 4s, 8s, 16s, 32s
-                logger.warning(
-                    "rate_limited",
-                    batch_index=i,
-                    attempt=attempt + 1,
-                    wait_seconds=wait,
-                )
-                time.sleep(wait)
-                continue
-            response.raise_for_status()
-            break
-        else:
-            # All retries exhausted
-            response.raise_for_status()
-
-        data = response.json()
-        for embedding_obj in data.get("embeddings", []):
-            embeddings.append(embedding_obj["values"])
-        logger.debug("embeddings_batch", batch_index=i, batch_size=len(batch))
-
-        # Throttle between batches to stay within rate limits
-        if i + BATCH_SIZE < len(texts):
-            time.sleep(1.5)
-
-    return embeddings
+    model = _get_model()
+    embeddings = model.encode(texts, batch_size=32, show_progress_bar=False)
+    logger.info("embeddings_complete", count=len(texts))
+    return [e.tolist() for e in embeddings]
 
 
 

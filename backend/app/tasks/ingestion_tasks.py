@@ -32,8 +32,8 @@ celery_app.conf.update(
 @celery_app.task(
     bind=True,
     name="ingest_document",
-    max_retries=3,
-    default_retry_delay=30,
+    max_retries=10,
+    default_retry_delay=60,
     acks_late=True,
 )
 def ingest_document(self, document_id: str) -> dict:

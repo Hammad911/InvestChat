@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-import httpx
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     FieldCondition,
@@ -21,7 +20,7 @@ from qdrant_client.models import (
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.ingestion.embedder import _build_sparse_vector, get_qdrant_client
+from app.ingestion.embedder import _build_sparse_vector, get_qdrant_client, _get_model
 
 logger = get_logger(__name__)
 
@@ -44,19 +43,10 @@ class RetrievedChunk:
 
 
 def _get_query_embedding(query: str) -> list[float]:
-    """Get dense embedding for a query via Gemini REST API."""
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{settings.GEMINI_EMBED_MODEL}:embedContent"
-        f"?key={settings.GEMINI_API_KEY}"
-    )
-    payload = {
-        "model": f"models/{settings.GEMINI_EMBED_MODEL}",
-        "content": {"parts": [{"text": query}]},
-    }
-    response = httpx.post(url, json=payload, timeout=30.0)
-    response.raise_for_status()
-    return response.json()["embedding"]["values"]
+    """Get dense embedding for a query using local sentence-transformers model."""
+    model = _get_model()
+    embedding = model.encode(query)
+    return embedding.tolist()
 
 
 def _build_filter(
