@@ -38,6 +38,8 @@ class Settings(BaseSettings):
             )
         elif self.DATABASE_URL.startswith("postgresql://"):
             self.DATABASE_URL = self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+            # asyncpg requires 'ssl' instead of 'sslmode'
+            self.DATABASE_URL = self.DATABASE_URL.replace("sslmode=require", "ssl=require")
 
         if not self.DATABASE_URL_SYNC:
             self.DATABASE_URL_SYNC = (
