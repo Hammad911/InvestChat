@@ -4,14 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login, register } from "@/lib/api";
 import { useAuthStore } from "@/stores";
-import {
-  Shield,
-  ArrowRight,
-  FileSearch,
-  BarChart3,
-  MessageSquare,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -43,229 +36,242 @@ export default function AuthPage() {
     }
   };
 
-  const features = [
-    {
-      icon: FileSearch,
-      title: "Smart Ingestion",
-      desc: "Upload SEC filings, financials & presentations — AI extracts and indexes everything.",
-      num: "01",
-    },
-    {
-      icon: Shield,
-      title: "Risk Assessment",
-      desc: "Automated risk matrix with severity scores and source citations.",
-      num: "02",
-    },
-    {
-      icon: BarChart3,
-      title: "Financial Extraction",
-      desc: "Key metrics extracted from tables with YoY comparisons.",
-      num: "03",
-    },
-    {
-      icon: MessageSquare,
-      title: "Chat with Documents",
-      desc: "Ask questions — get source-backed answers with inline citations.",
-      num: "04",
-    },
-  ];
-
   return (
     <div
       style={{
         minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        position: "relative",
       }}
     >
+      {/* ── Left Panel: Brand Statement ──────────────────────────── */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1.1fr 0.9fr",
-          maxWidth: "1080px",
-          width: "100%",
-          gap: "80px",
-          alignItems: "center",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          padding: "80px 72px",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        {/* Left — Branding */}
-        <div>
-          {/* Logo */}
-          <div
-            className="animate-fade-in stagger-1"
-            style={{ opacity: 0, display: "flex", alignItems: "center", gap: "10px", marginBottom: "32px" }}
-          >
-            <div
-              style={{
-                width: "10px",
-                height: "10px",
-                borderRadius: "50%",
-                background: "var(--color-accent)",
-                boxShadow: "0 0 12px rgba(212, 168, 83, 0.4)",
-              }}
-            />
-            <span
-              style={{
-                fontSize: "12px",
-                fontWeight: 700,
-                fontFamily: "var(--font-mono)",
-                color: "var(--color-accent)",
-                letterSpacing: "3px",
-                textTransform: "uppercase",
-              }}
-            >
-              InvestChat
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h1
-            className="animate-fade-in stagger-2"
-            style={{
-              opacity: 0,
-              fontSize: "48px",
-              fontWeight: 800,
-              lineHeight: 1.08,
-              marginBottom: "20px",
-              letterSpacing: "-0.03em",
-              color: "var(--color-text-primary)",
-            }}
-          >
-            Due Diligence,
-            <br />
-            <span style={{ color: "var(--color-accent)" }}>Accelerated.</span>
-          </h1>
-
-          <p
-            className="animate-fade-in stagger-3"
-            style={{
-              opacity: 0,
-              fontSize: "15px",
-              color: "var(--color-text-secondary)",
-              lineHeight: 1.7,
-              marginBottom: "40px",
-              maxWidth: "400px",
-            }}
-          >
-            Upload company documents and get AI-powered risk assessments,
-            financial analysis, and executive summaries — powered by your
-            own infrastructure.
-          </p>
-
-          {/* Feature List */}
-          <div style={{ display: "grid", gap: "12px" }}>
-            {features.map((f, i) => (
-              <div
-                key={i}
-                className={`animate-fade-in stagger-${i + 4}`}
-                style={{
-                  opacity: 0,
-                  display: "flex",
-                  gap: "16px",
-                  padding: "14px 18px",
-                  borderRadius: "var(--radius-md)",
-                  background: "var(--color-bg-card)",
-                  border: "1px solid var(--color-border)",
-                  transition: "all 0.25s ease",
-                  cursor: "default",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(212, 168, 83, 0.2)";
-                  e.currentTarget.style.background = "var(--color-bg-elevated)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "var(--color-border)";
-                  e.currentTarget.style.background = "var(--color-bg-card)";
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "11px",
-                    fontFamily: "var(--font-mono)",
-                    fontWeight: 600,
-                    color: "var(--color-accent)",
-                    lineHeight: "20px",
-                    flexShrink: 0,
-                    opacity: 0.6,
-                  }}
-                >
-                  {f.num}
-                </span>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "13.5px",
-                      fontWeight: 600,
-                      color: "var(--color-text-primary)",
-                      marginBottom: "3px",
-                    }}
-                  >
-                    {f.title}
-                  </div>
-                  <div style={{ fontSize: "12.5px", color: "var(--color-text-muted)", lineHeight: 1.5 }}>
-                    {f.desc}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Oversized background number — the "24-hour memory" element */}
+        <div
+          className="animate-fade-in stagger-1"
+          style={{
+            opacity: 0,
+            position: "absolute",
+            top: "50%",
+            right: "-20px",
+            transform: "translateY(-50%)",
+            fontSize: "320px",
+            fontWeight: 700,
+            fontFamily: "var(--font-mono)",
+            color: "rgba(207, 167, 78, 0.025)",
+            lineHeight: 0.85,
+            letterSpacing: "-0.05em",
+            userSelect: "none",
+            pointerEvents: "none",
+          }}
+        >
+          DD
         </div>
 
-        {/* Right — Auth Form */}
+        {/* Logo mark */}
         <div
-          className="glass-card animate-slide-up"
+          className="animate-fade-in stagger-1"
           style={{
-            padding: "44px",
             opacity: 0,
-            animationDelay: "0.15s",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            marginBottom: "56px",
           }}
         >
           <div
             style={{
-              width: "40px",
-              height: "3px",
-              borderRadius: "3px",
+              width: "28px",
+              height: "2px",
               background: "linear-gradient(90deg, var(--color-accent), transparent)",
-              marginBottom: "28px",
+              borderRadius: "1px",
             }}
           />
-
-          <h2
+          <span
             style={{
-              fontSize: "22px",
+              fontSize: "11px",
               fontWeight: 700,
-              marginBottom: "6px",
-              color: "var(--color-text-primary)",
-              letterSpacing: "-0.02em",
+              fontFamily: "var(--font-mono)",
+              color: "var(--color-accent)",
+              letterSpacing: "4px",
+              textTransform: "uppercase",
             }}
           >
-            {isLogin ? "Welcome back" : "Create account"}
-          </h2>
-          <p
-            style={{
-              fontSize: "13.5px",
-              color: "var(--color-text-muted)",
-              marginBottom: "32px",
-            }}
-          >
-            {isLogin
-              ? "Sign in to access your due diligence projects"
-              : "Start analyzing company documents in minutes"}
-          </p>
+            InvestChat
+          </span>
+        </div>
 
-          <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
+        {/* Headline — asymmetric, heavy */}
+        <h1
+          className="animate-type-reveal stagger-2"
+          style={{
+            opacity: 0,
+            fontSize: "54px",
+            fontWeight: 700,
+            lineHeight: 1.04,
+            marginBottom: "24px",
+            letterSpacing: "-0.04em",
+            color: "var(--color-text-primary)",
+            maxWidth: "440px",
+          }}
+        >
+          Due Diligence,
+          <br />
+          <span style={{ color: "var(--color-accent)" }}>Accelerated.</span>
+        </h1>
+
+        <p
+          className="animate-fade-in stagger-3"
+          style={{
+            opacity: 0,
+            fontSize: "15px",
+            color: "var(--color-text-secondary)",
+            lineHeight: 1.75,
+            marginBottom: "52px",
+            maxWidth: "380px",
+          }}
+        >
+          Upload company filings and get AI-powered risk assessments,
+          financial extraction, and executive summaries — entirely on
+          your own infrastructure.
+        </p>
+
+        {/* Stats row — monospaced, asymmetric spacing */}
+        <div
+          className="animate-fade-in stagger-4"
+          style={{
+            opacity: 0,
+            display: "flex",
+            gap: "48px",
+          }}
+        >
+          {[
+            { value: "< 60s", label: "Analysis time" },
+            { value: "100%", label: "Local / private" },
+            { value: "5+", label: "Doc formats" },
+          ].map((stat, i) => (
+            <div key={i}>
+              <div
+                style={{
+                  fontSize: "24px",
+                  fontWeight: 700,
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--color-text-primary)",
+                  letterSpacing: "-0.03em",
+                  marginBottom: "4px",
+                }}
+              >
+                {stat.value}
+              </div>
+              <div
+                style={{
+                  fontSize: "10.5px",
+                  fontWeight: 600,
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--color-text-muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "1.5px",
+                }}
+              >
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom edge decoration */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: "72px",
+            right: 0,
+            height: "1px",
+            background: "linear-gradient(90deg, var(--color-border-strong), transparent 80%)",
+          }}
+        />
+      </div>
+
+      {/* ── Right Panel: Auth Form ───────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "40px",
+          borderLeft: "1px solid var(--color-border)",
+          background: "var(--color-bg-secondary)",
+          position: "relative",
+        }}
+      >
+        {/* Subtle vertical accent bar */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: "25%",
+            bottom: "25%",
+            width: "1px",
+            background: "linear-gradient(180deg, transparent, var(--color-accent), transparent)",
+            opacity: 0.3,
+          }}
+        />
+
+        <div
+          className="animate-slide-up"
+          style={{
+            opacity: 0,
+            width: "100%",
+            maxWidth: "380px",
+          }}
+        >
+          {/* Form header */}
+          <div style={{ marginBottom: "36px" }}>
+            <h2
+              style={{
+                fontSize: "22px",
+                fontWeight: 700,
+                marginBottom: "8px",
+                color: "var(--color-text-primary)",
+                letterSpacing: "-0.03em",
+              }}
+            >
+              {isLogin ? "Welcome back" : "Create account"}
+            </h2>
+            <p
+              style={{
+                fontSize: "13px",
+                color: "var(--color-text-muted)",
+                lineHeight: 1.5,
+              }}
+            >
+              {isLogin
+                ? "Sign in to your due diligence workspace"
+                : "Start analyzing company documents in minutes"}
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display: "grid", gap: "20px" }}>
             {!isLogin && (
               <div>
                 <label
                   style={{
-                    fontSize: "11.5px",
-                    fontWeight: 600,
+                    fontSize: "10px",
+                    fontWeight: 700,
                     fontFamily: "var(--font-mono)",
                     color: "var(--color-text-muted)",
                     textTransform: "uppercase",
-                    letterSpacing: "1px",
+                    letterSpacing: "1.5px",
                     marginBottom: "8px",
                     display: "block",
                   }}
@@ -275,7 +281,7 @@ export default function AuthPage() {
                 <input
                   className="input-field"
                   type="text"
-                  placeholder="John Smith"
+                  placeholder="Jane Smith"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required={!isLogin}
@@ -287,12 +293,12 @@ export default function AuthPage() {
             <div>
               <label
                 style={{
-                  fontSize: "11.5px",
-                  fontWeight: 600,
+                  fontSize: "10px",
+                  fontWeight: 700,
                   fontFamily: "var(--font-mono)",
                   color: "var(--color-text-muted)",
                   textTransform: "uppercase",
-                  letterSpacing: "1px",
+                  letterSpacing: "1.5px",
                   marginBottom: "8px",
                   display: "block",
                 }}
@@ -313,12 +319,12 @@ export default function AuthPage() {
             <div>
               <label
                 style={{
-                  fontSize: "11.5px",
-                  fontWeight: 600,
+                  fontSize: "10px",
+                  fontWeight: 700,
                   fontFamily: "var(--font-mono)",
                   color: "var(--color-text-muted)",
                   textTransform: "uppercase",
-                  letterSpacing: "1px",
+                  letterSpacing: "1.5px",
                   marginBottom: "8px",
                   display: "block",
                 }}
@@ -344,8 +350,9 @@ export default function AuthPage() {
                   borderRadius: "var(--radius-sm)",
                   background: "var(--color-rose-dim)",
                   color: "var(--color-rose)",
-                  fontSize: "13px",
-                  border: "1px solid rgba(248, 113, 113, 0.15)",
+                  fontSize: "12.5px",
+                  border: "1px solid rgba(229, 83, 75, 0.12)",
+                  fontFamily: "var(--font-mono)",
                 }}
               >
                 {error}
@@ -360,22 +367,22 @@ export default function AuthPage() {
                 width: "100%",
                 justifyContent: "center",
                 padding: "13px",
-                fontSize: "14px",
+                fontSize: "13.5px",
                 marginTop: "4px",
-                opacity: loading ? 0.7 : 1,
               }}
               id="btn-submit"
             >
               {loading ? "Processing..." : isLogin ? "Sign In" : "Create Account"}
-              {!loading && <ArrowRight size={15} />}
+              {!loading && <ArrowRight size={14} />}
             </button>
           </form>
 
+          {/* Toggle auth mode */}
           <div
             style={{
-              marginTop: "24px",
+              marginTop: "28px",
               textAlign: "center",
-              fontSize: "13px",
+              fontSize: "12.5px",
               color: "var(--color-text-muted)",
             }}
           >
@@ -391,13 +398,41 @@ export default function AuthPage() {
                 color: "var(--color-accent)",
                 cursor: "pointer",
                 fontWeight: 600,
-                fontSize: "13px",
+                fontSize: "12.5px",
                 fontFamily: "var(--font-heading)",
+                textDecoration: "none",
               }}
               id="btn-toggle-auth"
             >
               {isLogin ? "Sign up" : "Sign in"}
             </button>
+          </div>
+
+          {/* Bottom technical detail */}
+          <div
+            style={{
+              marginTop: "48px",
+              paddingTop: "20px",
+              borderTop: "1px solid var(--color-border)",
+              display: "flex",
+              gap: "24px",
+            }}
+          >
+            {["Gemini Flash", "Qdrant Vectors", "On-Premise"].map((tag) => (
+              <span
+                key={tag}
+                style={{
+                  fontSize: "9.5px",
+                  fontWeight: 600,
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--color-text-ghost)",
+                  textTransform: "uppercase",
+                  letterSpacing: "1.5px",
+                }}
+              >
+                {tag}
+              </span>
+            ))}
           </div>
         </div>
       </div>

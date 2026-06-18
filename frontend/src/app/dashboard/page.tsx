@@ -11,21 +11,19 @@ import {
   isAuthenticated,
 } from "@/lib/api";
 import { useProjectStore, useUIStore } from "@/stores";
-import { formatDate, getStatusColor } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import type { HealthResponse } from "@/types";
 import {
   Plus,
   FolderOpen,
   FileText,
   Trash2,
-  Activity,
   LogOut,
   CheckCircle,
   XCircle,
   AlertCircle,
   ChevronRight,
   Briefcase,
-  Search,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -75,52 +73,52 @@ export default function DashboardPage() {
   };
 
   const StatusIcon = ({ s }: { s: string }) => {
-    if (s === "healthy") return <CheckCircle size={12} style={{ color: "var(--color-emerald)" }} />;
-    if (s === "unhealthy") return <XCircle size={12} style={{ color: "var(--color-rose)" }} />;
-    return <AlertCircle size={12} style={{ color: "var(--color-amber)" }} />;
+    if (s === "healthy") return <CheckCircle size={11} style={{ color: "var(--color-emerald)" }} />;
+    if (s === "unhealthy") return <XCircle size={11} style={{ color: "var(--color-rose)" }} />;
+    return <AlertCircle size={11} style={{ color: "var(--color-amber)" }} />;
   };
 
   return (
     <div style={{ minHeight: "100vh" }}>
-      {/* Header */}
+      {/* ── Header Bar ──────────────────────────────────────────── */}
       <header
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 32px",
-          height: "56px",
+          height: "52px",
           borderBottom: "1px solid var(--color-border)",
           background: "var(--color-bg-secondary)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div
             style={{
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              background: "var(--color-accent)",
-              boxShadow: "0 0 8px rgba(212, 168, 83, 0.4)",
+              width: "20px",
+              height: "2px",
+              background: "linear-gradient(90deg, var(--color-accent), transparent)",
+              borderRadius: "1px",
             }}
           />
           <span
             style={{
-              fontSize: "13px",
+              fontSize: "11px",
               fontWeight: 700,
               fontFamily: "var(--font-mono)",
-              letterSpacing: "2px",
+              letterSpacing: "3px",
               textTransform: "uppercase",
+              color: "var(--color-text-secondary)",
             }}
           >
             InvestChat
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {/* Service Status */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {/* Service indicators */}
           {health && (
-            <div style={{ display: "flex", gap: "6px" }}>
+            <div style={{ display: "flex", gap: "4px" }}>
               {health.services.map((s) => (
                 <div
                   key={s.name}
@@ -128,17 +126,17 @@ export default function DashboardPage() {
                     display: "flex",
                     alignItems: "center",
                     gap: "5px",
-                    padding: "4px 10px",
-                    borderRadius: "16px",
+                    padding: "3px 9px",
+                    borderRadius: "3px",
                     background: "var(--color-bg-card)",
                     border: "1px solid var(--color-border-subtle)",
-                    fontSize: "11px",
+                    fontSize: "10px",
                     fontFamily: "var(--font-mono)",
-                    fontWeight: 500,
+                    fontWeight: 600,
                   }}
                 >
                   <StatusIcon s={s.status} />
-                  <span style={{ color: "var(--color-text-muted)", textTransform: "capitalize" }}>
+                  <span style={{ color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                     {s.name}
                   </span>
                 </div>
@@ -146,64 +144,84 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div style={{ width: "1px", height: "20px", background: "var(--color-border)" }} />
+          <div style={{ width: "1px", height: "18px", background: "var(--color-border)" }} />
 
           <button
             className="btn-ghost"
             onClick={() => logout()}
             id="btn-logout"
-            style={{ fontSize: "12px" }}
+            style={{ fontSize: "11px", gap: "5px" }}
+            aria-label="Sign out"
           >
-            <LogOut size={14} /> Sign out
+            <LogOut size={13} /> Sign out
           </button>
         </div>
       </header>
 
-      {/* Main */}
-      <main style={{ maxWidth: "1100px", margin: "0 auto", padding: "40px 32px" }}>
-        {/* Title Row */}
+      {/* ── Main Content ────────────────────────────────────────── */}
+      <main style={{ maxWidth: "1060px", margin: "0 auto", padding: "44px 32px" }}>
+        {/* Title section — asymmetric */}
         <div
           className="animate-fade-in"
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-end",
-            marginBottom: "36px",
+            marginBottom: "40px",
             opacity: 0,
           }}
         >
           <div>
             <h1
               style={{
-                fontSize: "26px",
+                fontSize: "28px",
                 fontWeight: 700,
                 marginBottom: "6px",
-                letterSpacing: "-0.02em",
+                letterSpacing: "-0.03em",
               }}
             >
               Projects
             </h1>
-            <p
+            <div
               style={{
-                color: "var(--color-text-muted)",
-                fontSize: "13px",
-                fontFamily: "var(--font-mono)",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
               }}
             >
-              {projects.length} project{projects.length !== 1 ? "s" : ""} ·{" "}
-              {projects.reduce((a, p) => a + p.document_count, 0)} documents
-            </p>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--color-text-muted)",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                {projects.length} project{projects.length !== 1 ? "s" : ""}
+              </span>
+              <span style={{ color: "var(--color-text-ghost)" }}>·</span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--color-text-ghost)",
+                }}
+              >
+                {projects.reduce((a, p) => a + p.document_count, 0)} documents
+              </span>
+            </div>
           </div>
           <button
             className="btn-primary"
             onClick={() => setShowCreate(true)}
             id="btn-new-project"
           >
-            <Plus size={15} /> New Project
+            <Plus size={14} /> New Project
           </button>
         </div>
 
-        {/* Create Modal */}
+        {/* Create project inline form */}
         {showCreate && (
           <div
             className="glass-card animate-slide-up"
@@ -220,14 +238,15 @@ export default function DashboardPage() {
                   height: "32px",
                   borderRadius: "var(--radius-sm)",
                   background: "var(--color-accent-dim)",
+                  border: "1px solid rgba(207, 167, 78, 0.1)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Briefcase size={16} style={{ color: "var(--color-accent)" }} />
+                <Briefcase size={15} style={{ color: "var(--color-accent)" }} />
               </div>
-              <h3 style={{ fontSize: "16px", fontWeight: 600 }}>New Project</h3>
+              <h3 style={{ fontSize: "15px", fontWeight: 600 }}>New Project</h3>
             </div>
             <div style={{ display: "grid", gap: "12px" }}>
               <input
@@ -257,26 +276,26 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Projects Grid */}
+        {/* Projects grid */}
         {loading ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "14px" }}>
             {[1, 2, 3].map((i) => (
-              <div key={i} className="skeleton" style={{ height: "160px" }} />
+              <div key={i} className="skeleton" style={{ height: "155px" }} />
             ))}
           </div>
         ) : projects.length === 0 ? (
           <div
             className="glass-card animate-fade-in"
             style={{
-              padding: "80px 40px",
+              padding: "100px 40px",
               textAlign: "center",
               opacity: 0,
             }}
           >
             <div
               style={{
-                width: "56px",
-                height: "56px",
+                width: "52px",
+                height: "52px",
                 borderRadius: "var(--radius-lg)",
                 background: "var(--color-bg-elevated)",
                 border: "1px solid var(--color-border)",
@@ -286,14 +305,14 @@ export default function DashboardPage() {
                 margin: "0 auto 20px",
               }}
             >
-              <FolderOpen size={24} style={{ color: "var(--color-text-muted)" }} />
+              <FolderOpen size={22} style={{ color: "var(--color-text-muted)" }} />
             </div>
             <h3
               style={{
-                fontSize: "17px",
+                fontSize: "16px",
                 fontWeight: 600,
                 marginBottom: "8px",
-                letterSpacing: "-0.01em",
+                letterSpacing: "-0.02em",
               }}
             >
               No projects yet
@@ -301,25 +320,25 @@ export default function DashboardPage() {
             <p
               style={{
                 color: "var(--color-text-muted)",
-                fontSize: "13.5px",
-                marginBottom: "24px",
-                maxWidth: "320px",
-                margin: "0 auto 24px",
-                lineHeight: 1.6,
+                fontSize: "13px",
+                marginBottom: "28px",
+                maxWidth: "300px",
+                margin: "0 auto 28px",
+                lineHeight: 1.65,
               }}
             >
-              Create your first due diligence project to begin analyzing documents.
+              Create your first due diligence project to start analyzing company documents.
             </p>
             <button className="btn-primary" onClick={() => setShowCreate(true)}>
-              <Plus size={15} /> Create Project
+              <Plus size={14} /> Create Project
             </button>
           </div>
         ) : (
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-              gap: "16px",
+              gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))",
+              gap: "14px",
             }}
           >
             {projects.map((p, i) => (
@@ -340,16 +359,16 @@ export default function DashboardPage() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "flex-start",
-                    marginBottom: "10px",
+                    marginBottom: "8px",
                   }}
                 >
                   <h3
                     style={{
-                      fontSize: "15px",
+                      fontSize: "14.5px",
                       fontWeight: 600,
                       lineHeight: 1.4,
                       flex: 1,
-                      letterSpacing: "-0.01em",
+                      letterSpacing: "-0.015em",
                     }}
                   >
                     {p.name}
@@ -361,25 +380,26 @@ export default function DashboardPage() {
                       handleDelete(p.id);
                     }}
                     style={{
-                      padding: "5px",
+                      padding: "4px",
                       color: "var(--color-text-muted)",
-                      opacity: 0.4,
+                      opacity: 0.3,
                       transition: "opacity 0.15s",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.4")}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.3")}
+                    aria-label={`Delete project ${p.name}`}
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={12} />
                   </button>
                 </div>
 
                 {p.description && (
                   <p
                     style={{
-                      fontSize: "13px",
+                      fontSize: "12.5px",
                       color: "var(--color-text-muted)",
                       marginBottom: "auto",
-                      lineHeight: 1.5,
+                      lineHeight: 1.55,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       display: "-webkit-box",
@@ -405,26 +425,28 @@ export default function DashboardPage() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: "6px",
-                      fontSize: "12px",
+                      gap: "5px",
+                      fontSize: "11px",
                       fontFamily: "var(--font-mono)",
                       color: "var(--color-text-muted)",
+                      fontWeight: 500,
                     }}
                   >
-                    <FileText size={12} />
+                    <FileText size={11} />
                     {p.document_count} doc{p.document_count !== 1 ? "s" : ""}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     <span
                       style={{
-                        fontSize: "11px",
+                        fontSize: "10px",
                         fontFamily: "var(--font-mono)",
-                        color: "var(--color-text-muted)",
+                        color: "var(--color-text-ghost)",
+                        letterSpacing: "0.3px",
                       }}
                     >
                       {formatDate(p.updated_at)}
                     </span>
-                    <ChevronRight size={12} style={{ color: "var(--color-text-muted)", opacity: 0.5 }} />
+                    <ChevronRight size={11} style={{ color: "var(--color-text-ghost)" }} />
                   </div>
                 </div>
               </div>

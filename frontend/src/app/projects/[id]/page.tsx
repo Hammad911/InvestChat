@@ -171,10 +171,14 @@ export default function ProjectWorkspace({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ textAlign: "center" }}>
-          <Loader2 size={28} style={{ color: "var(--color-accent)", animation: "spin 1s linear infinite", marginBottom: "12px" }} />
-          <p style={{ fontSize: "13px", fontFamily: "var(--font-mono)", color: "var(--color-text-muted)" }}>Loading project...</p>
+      <div style={{ padding: "40px", maxWidth: "1200px", margin: "0 auto" }}>
+        <div style={{ display: "flex", gap: "20px", marginBottom: "30px" }}>
+          <div className="skeleton" style={{ height: "40px", width: "40px", borderRadius: "8px" }} />
+          <div className="skeleton" style={{ height: "40px", flex: 1, borderRadius: "8px" }} />
+        </div>
+        <div style={{ display: "flex", gap: "20px" }}>
+          <div className="skeleton" style={{ height: "600px", width: "280px", borderRadius: "16px" }} />
+          <div className="skeleton" style={{ height: "600px", flex: 1, borderRadius: "16px" }} />
         </div>
       </div>
     );
@@ -193,6 +197,7 @@ export default function ProjectWorkspace({ params }: PageProps) {
             className="btn-ghost"
             onClick={() => router.push("/dashboard")}
             style={{ padding: "5px", color: "var(--color-text-muted)" }}
+            aria-label="Back to dashboard"
           >
             <ArrowLeft size={16} />
           </button>
@@ -344,15 +349,13 @@ export default function ProjectWorkspace({ params }: PageProps) {
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteDocument(projectId, doc.id).then(loadProject); }}
+                  className="btn-ghost"
                   style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    color: "var(--color-text-muted)", padding: "4px", opacity: 0.3,
-                    transition: "opacity 0.15s",
+                    padding: "6px",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
-                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.3")}
+                  aria-label={`Delete ${doc.original_filename}`}
                 >
-                  <Trash2 size={11} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             ))}
@@ -475,10 +478,11 @@ export default function ProjectWorkspace({ params }: PageProps) {
                     className="btn-primary"
                     onClick={handleSend}
                     disabled={isStreaming || !chatInput.trim()}
-                    style={{ padding: "10px 16px", flexShrink: 0 }}
+                    style={{ padding: "12px 18px", flexShrink: 0 }}
                     id="btn-send"
+                    aria-label="Send message"
                   >
-                    <Send size={14} />
+                    <Send size={16} />
                   </button>
                 </div>
               </div>
