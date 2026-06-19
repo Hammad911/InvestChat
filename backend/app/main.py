@@ -22,6 +22,17 @@ logger = get_logger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 
+# ── Sentry ───────────────────────────────────────────────────────────────────
+import sentry_sdk
+
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.ENVIRONMENT,
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
+    )
+
 # ── Lifespan ─────────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):

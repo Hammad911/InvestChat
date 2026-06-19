@@ -346,6 +346,15 @@ export default function ProjectWorkspace({ params }: PageProps) {
                       }} />
                     </div>
                   )}
+                  {/* Error message */}
+                  {doc.ingestion_status === "failed" && doc.error_message && (
+                    <div style={{
+                      fontSize: "10px", color: "var(--color-rose)", marginTop: "4px",
+                      fontFamily: "var(--font-mono)", lineHeight: 1.2
+                    }}>
+                      Error: {doc.error_message}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteDocument(projectId, doc.id).then(loadProject); }}

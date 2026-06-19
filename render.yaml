@@ -29,6 +29,8 @@ services:
         value: "investchat"
       - key: BACKEND_CORS_ORIGINS
         sync: false
+      - key: SENTRY_DSN
+        sync: false
 
   - type: worker
     name: investchat-worker
@@ -85,3 +87,8 @@ services:
           type: web
           name: investchat-api
           envVarKey: MINIO_BUCKET_NAME
+      - key: SENTRY_DSN
+        fromService:
+          type: web
+          name: investchat-api
+          envVarKey: SENTRY_DSN

@@ -299,6 +299,10 @@ async def document_status_stream(
                 yield f"data: {final}\n\n"
                 return
 
+            if poll % 10 == 0:
+                # Send a heartbeat ping every 10 seconds to keep reverse proxies alive
+                yield f"data: {{\"type\": \"ping\"}}\n\n"
+
             await asyncio.sleep(1)
             poll += 1
 

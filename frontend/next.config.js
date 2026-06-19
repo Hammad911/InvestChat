@@ -8,4 +8,13 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+const { withSentryConfig } = require("@sentry/nextjs");
+
+module.exports = withSentryConfig(nextConfig, {
+  silent: true,
+  org: "student-h5i",
+  project: "javascript-nextjs",
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  disableLogger: true,
+});
