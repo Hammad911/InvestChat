@@ -21,8 +21,7 @@ google-genai==0.3.0
 qdrant-client==1.14.2
 
 # ── Reranking ────────────────────────────────────────────────────────────────
-sentence-transformers==4.1.0
-torch==2.7.1
+# (Using Gemini API for embeddings instead of local sentence-transformers)
 
 # ── Document Parsing ─────────────────────────────────────────────────────────
 unstructured==0.17.2

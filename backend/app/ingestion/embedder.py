@@ -29,18 +29,12 @@ logger = get_logger(__name__)
 
 EMBED_DIM = 768  # all-mpnet-base-v2 output dimensions
 BATCH_SIZE = 32
-_EMBED_MODEL = None  # Lazy-loaded singleton
-
+# Gemini embedding replaces local sentence transformers
+_EMBED_MODEL = "gemini-used-instead"
 
 def _get_model():
-    """Lazy-load the sentence-transformers model (singleton)."""
-    global _EMBED_MODEL
-    if _EMBED_MODEL is None:
-        from sentence_transformers import SentenceTransformer
-        logger.info("loading_embedding_model", model="all-mpnet-base-v2")
-        _EMBED_MODEL = SentenceTransformer("all-mpnet-base-v2")
-        logger.info("embedding_model_loaded", model="all-mpnet-base-v2")
-    return _EMBED_MODEL
+    # Deprecated. Handled directly via Gemini now.
+    pass
 
 
 def get_qdrant_client() -> QdrantClient:
@@ -73,14 +67,34 @@ def ensure_collection() -> None:
 
 
 def _get_dense_embeddings(texts: list[str]) -> list[list[float]]:
-    """Get dense embeddings using local sentence-transformers model.
+    """Get dense embeddings using Gemini text-embedding-004.
     
-    Runs entirely locally — no API calls, no rate limits.
+    Bypasses local sentence-transformers to avoid memory spikes and OOM kills.
     """
-    model = _get_model()
-    embeddings = model.encode(texts, batch_size=32, show_progress_bar=False)
+    from google import genai
+    
+    if not texts:
+        return []
+        
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    
+    # Gemini handles batching natively, but we can send the whole list
+    # The API might have limits on batch size, so we'll chunk the list just in case
+    embeddings = []
+    
+    # Process in batches of 100 to respect Gemini API limits
+    batch_size = 100
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        result = client.models.embed_content(
+            model=settings.GEMINI_EMBED_MODEL,
+            contents=batch
+        )
+        for e in result.embeddings:
+            embeddings.append(e.values)
+            
     logger.info("embeddings_complete", count=len(texts))
-    return [e.tolist() for e in embeddings]
+    return embeddings
 
 
 
