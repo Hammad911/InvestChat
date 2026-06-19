@@ -65,6 +65,20 @@ def ensure_collection() -> None:
     else:
         logger.info("qdrant_collection_exists", name=settings.QDRANT_COLLECTION)
 
+    # Always ensure payload indices exist for filtering
+    from qdrant_client.models import PayloadSchemaType
+    
+    for field in ["project_id", "doc_type", "section_name"]:
+        try:
+            client.create_payload_index(
+                collection_name=settings.QDRANT_COLLECTION,
+                field_name=field,
+                field_schema=PayloadSchemaType.KEYWORD,
+            )
+        except Exception as e:
+            # Ignore if it already exists or other minor errors
+            logger.debug("payload_index_creation_skipped", field=field, error=str(e))
+
 
 def _get_dense_embeddings(texts: list[str]) -> list[list[float]]:
     """Get dense embeddings using Gemini text-embedding-004.
