@@ -26,7 +26,7 @@ services:
       - key: MINIO_SECRET_KEY
         sync: false
       - key: MINIO_BUCKET_NAME
-        value: "investchat"
+        value: "forinvest"
       - key: BACKEND_CORS_ORIGINS
         sync: false
       - key: SENTRY_DSN
