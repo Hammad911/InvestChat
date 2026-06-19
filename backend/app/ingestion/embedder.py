@@ -73,6 +73,8 @@ def _get_dense_embeddings(texts: list[str]) -> list[list[float]]:
     """
     from google import genai
     
+    from google.genai import types
+    
     if not texts:
         return []
         
@@ -88,7 +90,8 @@ def _get_dense_embeddings(texts: list[str]) -> list[list[float]]:
         batch = texts[i:i + batch_size]
         result = client.models.embed_content(
             model=settings.GEMINI_EMBED_MODEL,
-            contents=batch
+            contents=batch,
+            config=types.EmbedContentConfig(output_dimensionality=768)
         )
         for e in result.embeddings:
             embeddings.append(e.values)
