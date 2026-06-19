@@ -20,7 +20,7 @@ from qdrant_client.models import (
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.ingestion.embedder import _build_sparse_vector, get_qdrant_client, _get_model
+from app.ingestion.embedder import _build_sparse_vector, get_qdrant_client, _get_dense_embeddings
 
 logger = get_logger(__name__)
 
@@ -43,10 +43,11 @@ class RetrievedChunk:
 
 
 def _get_query_embedding(query: str) -> list[float]:
-    """Get dense embedding for a query using local sentence-transformers model."""
-    model = _get_model()
-    embedding = model.encode(query)
-    return embedding.tolist()
+    """Get dense embedding for a query using Gemini text-embedding."""
+    embeddings = _get_dense_embeddings([query])
+    if not embeddings:
+        return []
+    return embeddings[0]
 
 
 def _build_filter(
