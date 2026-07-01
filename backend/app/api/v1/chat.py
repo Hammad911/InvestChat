@@ -15,10 +15,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.core.security import get_current_user
 from app.db.models import ChatMessage, Document, MessageRole, Project, User
 from app.db.session import get_db
-from app.main import limiter
 
 router = APIRouter(prefix="/projects/{project_id}/chat", tags=["chat"])
 

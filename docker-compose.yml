@@ -143,6 +143,26 @@ services:
       - ddcopilot
     restart: unless-stopped
 
+  # ── Celery Beat: Scheduled Task Runner ──────────────────────────────────────
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dd-celery-beat
+    command: celery -A app.tasks.ingestion_tasks beat --loglevel=info --schedule=/tmp/celerybeat-schedule
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - ddcopilot
+    restart: unless-stopped
+
   # ── Frontend: Next.js Application ──────────────────────────────────────────
   frontend:
     build:
@@ -164,6 +184,7 @@ services:
     networks:
       - ddcopilot
     restart: unless-stopped
+
 
 # ── Volumes ──────────────────────────────────────────────────────────────────
 volumes:

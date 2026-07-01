@@ -8,9 +8,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
@@ -18,6 +17,7 @@ import uuid
 import structlog
 
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.core.logging import setup_logging, get_logger
 
 logger = get_logger(__name__)
@@ -45,7 +45,7 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
 
 
 # ── Rate Limiter ─────────────────────────────────────────────────────────────
-limiter = Limiter(key_func=get_remote_address)
+# limiter lives in app.core.limiter to avoid circular imports
 
 
 # ── Sentry ───────────────────────────────────────────────────────────────────

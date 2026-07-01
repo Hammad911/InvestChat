@@ -91,6 +91,29 @@ def ingest_document(self, document_id: str) -> dict:
             document_id=document_id,
         )
         run_ingestion_pipeline(document_id)
+
+        # Invalidate analysis cache for this project so next analysis
+        # request picks up the newly ingested document
+        try:
+            from app.core.semantic_cache import invalidate_project_cache
+            # We need the project_id from the document — look it up sync
+            from sqlalchemy import create_engine, text
+            sync_engine = create_engine(settings.DATABASE_URL_SYNC, pool_pre_ping=True)
+            with sync_engine.connect() as conn:
+                row = conn.execute(
+                    text("SELECT project_id FROM documents WHERE id = :doc_id"),
+                    {"doc_id": document_id},
+                ).fetchone()
+                if row:
+                    invalidate_project_cache(str(row[0]))
+        except Exception as cache_exc:
+            # Non-fatal — cache will expire on its own TTL
+            logger.warning(
+                "cache_invalidation_failed",
+                document_id=document_id,
+                error=str(cache_exc),
+            )
+
         return {"status": "success", "document_id": document_id}
 
     except Exception as exc:
@@ -149,7 +172,9 @@ def clean_orphaned_vectors(self) -> dict:
             db.close()
             sync_engine.dispose()
 
-        logger.info("orphan_cleanup_db_fetched", live_doc_count=len(live_doc_ids))
+        logger.info(
+            "orphan_cleanup_db_fetched", live_doc_count=len(live_doc_ids)
+        )
 
         if not live_doc_ids:
             logger.warning("orphan_cleanup_no_live_docs_skipping")
@@ -160,6 +185,7 @@ def clean_orphaned_vectors(self) -> dict:
         orphaned_doc_ids: set[str] = set()
         offset = None
         batch_size = 1000
+        total_points_scanned = 0
 
         while True:
             scroll_result, next_offset = client.scroll(
@@ -169,6 +195,8 @@ def clean_orphaned_vectors(self) -> dict:
                 with_payload=["doc_id"],
                 with_vectors=False,
             )
+
+            total_points_scanned += len(scroll_result)
 
             for point in scroll_result:
                 doc_id = (point.payload or {}).get("doc_id")
@@ -181,7 +209,7 @@ def clean_orphaned_vectors(self) -> dict:
 
         logger.info(
             "orphan_cleanup_scan_complete",
-            total_points_scanned=offset,
+            total_points_scanned=total_points_scanned,
             orphaned_doc_ids_found=len(orphaned_doc_ids),
         )
 

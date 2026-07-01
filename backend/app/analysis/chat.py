@@ -143,22 +143,47 @@ async def chat_stream(
     # Send citations first
     yield f"data: {json.dumps({'type': 'citations', 'citations': citations})}\n\n"
 
-    # Stream LLM response — uses streaming variant (no retry wrapper)
+    # Stream LLM response — sync SDK runs in thread pool, yielded via async queue
     from app.core.gemini_client import stream_content
 
-    try:
-        response_stream = stream_content(
-            prompt=prompt,
-            model=settings.GEMINI_LLM_MODEL,
-            temperature=0.3,
-            system_instruction=CHAT_SYSTEM_PROMPT,
-        )
-        for chunk in response_stream:
-            if chunk.text:
-                yield f"data: {json.dumps({'type': 'token', 'content': chunk.text})}\n\n"
-    except Exception as exc:
-        logger.error("chat_stream_error", error=str(exc), request_id=request_id)
-        yield f"data: {json.dumps({'type': 'error', 'message': 'Stream interrupted. Please retry.'})}\n\n"
+    queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+    def _stream_to_queue():
+        """Runs in a thread; pushes tokens onto the async queue."""
+        try:
+            for chunk in stream_content(
+                prompt=prompt,
+                model=settings.GEMINI_LLM_MODEL,
+                temperature=0.3,
+                system_instruction=CHAT_SYSTEM_PROMPT,
+            ):
+                if chunk.text:
+                    asyncio.run_coroutine_threadsafe(
+                        queue.put(chunk.text), asyncio.get_event_loop()
+                    )
+        except Exception as exc:
+            asyncio.run_coroutine_threadsafe(
+                queue.put(f"__ERROR__:{exc}"), asyncio.get_event_loop()
+            )
+        finally:
+            asyncio.run_coroutine_threadsafe(
+                queue.put(None), asyncio.get_event_loop()  # sentinel
+            )
+
+    import concurrent.futures
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(None, _stream_to_queue)
+
+    while True:
+        token = await queue.get()
+        if token is None:
+            break
+        if isinstance(token, str) and token.startswith("__ERROR__:"):
+            err_msg = token[len("__ERROR__:"):]
+            logger.error("chat_stream_error", error=err_msg, request_id=request_id)
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Stream interrupted. Please retry.'})}\n\n"
+            break
+        yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
 
     yield f"data: {json.dumps({'type': 'done'})}\n\n"
     yield "data: [DONE]\n\n"
