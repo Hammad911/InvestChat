@@ -215,7 +215,16 @@ async def delete_document(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """Delete a document from storage, vector DB, and database."""
+    """
+    Delete a document atomically across Qdrant, MinIO, and PostgreSQL.
+
+    Ordering and rollback strategy:
+    1. Delete vectors from Qdrant FIRST — if this fails, DB record is untouched
+       and we can raise a clean 500 without leaving orphaned vectors.
+    2. Delete file from MinIO — non-fatal if this fails (storage can be
+       reconciled separately). Log the error and proceed.
+    3. Hard-delete the DB record — always last, so Qdrant is never orphaned.
+    """
     await _get_project_or_404(project_id, user, db)
     result = await db.execute(
         select(Document).where(
@@ -226,20 +235,41 @@ async def delete_document(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # Delete from MinIO
-    try:
-        delete_file(doc.file_path)
-    except Exception as e:
-        logger.warning("minio_delete_failed", error=str(e))
+    doc_id_str = str(doc.id)
 
-    # Delete vectors from Qdrant
+    # ── Step 1: Delete from Qdrant (must succeed before DB delete) ───────────
     try:
         from app.ingestion.embedder import delete_document_vectors
-        delete_document_vectors(str(doc.id))
+        delete_document_vectors(doc_id_str)
+        logger.info("qdrant_vectors_deleted", doc_id=doc_id_str)
     except Exception as e:
-        logger.warning("qdrant_delete_failed", error=str(e))
+        logger.error(
+            "qdrant_delete_failed",
+            doc_id=doc_id_str,
+            error=str(e),
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete document vectors. Document record preserved. Please retry.",
+        )
 
+    # ── Step 2: Delete from MinIO (best-effort — log and continue) ───────────
+    try:
+        delete_file(doc.file_path)
+        logger.info("minio_file_deleted", doc_id=doc_id_str, file_path=doc.file_path)
+    except Exception as e:
+        # Non-fatal: vectors are gone, so retrieval is clean.
+        # The storage file will be reconciled by clean_orphaned_vectors task.
+        logger.warning(
+            "minio_delete_failed_continuing",
+            doc_id=doc_id_str,
+            file_path=doc.file_path,
+            error=str(e),
+        )
+
+    # ── Step 3: Delete from PostgreSQL (cascades to IngestionEvents) ─────────
     await db.delete(doc)
+    logger.info("document_db_deleted", doc_id=doc_id_str)
 
 
 @router.get("/{doc_id}/status")

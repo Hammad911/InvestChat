@@ -11,11 +11,37 @@ from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
+import uuid
+import structlog
 
 from app.core.config import settings
 from app.core.logging import setup_logging, get_logger
 
 logger = get_logger(__name__)
+
+
+# ── Request ID Middleware ─────────────────────────────────────────────────────
+class RequestIdMiddleware(BaseHTTPMiddleware):
+    """
+    Generates a unique request_id for every incoming request.
+    - Binds request_id to the structlog context so ALL log lines within
+      the same request automatically include it.
+    - Echoes it back in the X-Request-ID response header.
+    """
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        # Store on request.state so route handlers can access it
+        request.state.request_id = request_id
+        # Bind to structlog context for this async task
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(request_id=request_id)
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
 
 
 # ── Rate Limiter ─────────────────────────────────────────────────────────────
@@ -94,6 +120,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Request ID — must be added AFTER CORS so it runs first (Starlette reverses order)
+app.add_middleware(RequestIdMiddleware)
+
 
 
 # ── Error Handlers ───────────────────────────────────────────────────────────

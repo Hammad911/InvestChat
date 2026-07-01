@@ -8,15 +8,17 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.core.security import get_current_user
 from app.db.models import ChatMessage, Document, MessageRole, Project, User
 from app.db.session import get_db
+from app.main import limiter
 
 router = APIRouter(prefix="/projects/{project_id}/chat", tags=["chat"])
 
@@ -48,7 +50,9 @@ class ChatHistoryResponse(BaseModel):
 
 
 @router.post("")
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
 async def chat(
+    request: Request,
     project_id: UUID,
     body: ChatRequest,
     db: AsyncSession = Depends(get_db),
@@ -93,6 +97,7 @@ async def chat(
 
     full_response = []
     all_citations = []
+    request_id = getattr(request.state, "request_id", None)
 
     async def generate():
         nonlocal full_response, all_citations
@@ -101,6 +106,7 @@ async def chat(
             project_id=str(project_id),
             history=history,
             doc_name_map=doc_name_map,
+            request_id=request_id,
         ):
             # Capture tokens for DB storage
             if chunk.startswith("data: "):

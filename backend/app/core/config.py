@@ -17,8 +17,27 @@ class Settings(BaseSettings):
 
     # ── Gemini API ───────────────────────────────────────────────────────
     GEMINI_API_KEY: str = ""
+    # Chat / fast endpoints — use flash for low latency
     GEMINI_LLM_MODEL: str = "gemini-2.5-flash"
+    # Deep analysis endpoints (risks, growth, financials, summary) — use pro
+    GEMINI_ANALYSIS_MODEL: str = "gemini-2.5-flash"  # override in prod: gemini-2.5-pro
+    # Embedding model — 768 dims, matches EMBED_DIM in embedder.py
     GEMINI_EMBED_MODEL: str = "gemini-embedding-001"
+    # Hard timeout (seconds) on every Gemini API call
+    GEMINI_REQUEST_TIMEOUT: int = 60
+
+    # ── Retrieval ────────────────────────────────────────────────────────
+    # "hybrid" | "dense" | "sparse"  — controls which search paths are used
+    RETRIEVAL_MODE: str = "hybrid"
+
+    # ── Semantic Cache ───────────────────────────────────────────────────
+    # Cosine similarity threshold for cache hits (0.0–1.0)
+    SEMANTIC_CACHE_THRESHOLD: float = 0.90
+    # Redis DB index for semantic cache (separate from Celery's DB 0)
+    SEMANTIC_CACHE_REDIS_DB: int = 1
+
+    # ── Rate Limiting ────────────────────────────────────────────────────
+    RATE_LIMIT_PER_MINUTE: int = 20
 
     # ── PostgreSQL ───────────────────────────────────────────────────────
     POSTGRES_USER: str = "ddcopilot"

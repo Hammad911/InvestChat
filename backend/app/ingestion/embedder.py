@@ -13,7 +13,6 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
     NamedSparseVector,
-    NamedVector,
     PointStruct,
     SparseVector,
     VectorParams,
@@ -167,8 +166,12 @@ def embed_and_store(chunks: list[Chunk]) -> int:
         sparse = _build_sparse_vector(chunk.text)
         point = PointStruct(
             id=chunk.chunk_id,
+            # ── FIX: include BOTH dense and sparse (BM25) vectors ──────────
+            # Previously only "dense" was stored — sparse was built but dropped,
+            # meaning hybrid search returned 0 BM25 hits on every query.
             vector={
                 "dense": dense_vectors[i],
+                "bm25": sparse,  # NamedSparseVector-compatible dict form
             },
             payload={
                 "project_id": chunk.project_id,

@@ -1,5 +1,6 @@
 """
 Analysis API routes — triggers and retrieves AI analysis runs.
+Rate-limited per IP via slowapi. Request IDs propagated to analysis modules.
 """
 from __future__ import annotations
 
@@ -7,14 +8,16 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.core.security import get_current_user
 from app.db.models import AnalysisRun, AnalysisType, Document, Project, RunStatus, User
 from app.db.session import get_db
+from app.main import limiter
 
 router = APIRouter(prefix="/projects/{project_id}/analysis", tags=["analysis"])
 
@@ -64,6 +67,7 @@ async def _run_analysis(
     project: Project,
     analysis_type: AnalysisType,
     db: AsyncSession,
+    request_id: str | None = None,
 ) -> AnalysisResponse:
     """Run an analysis and persist the result."""
     from app.analysis.risks import analyze_risks
@@ -84,13 +88,13 @@ async def _run_analysis(
 
     try:
         if analysis_type == AnalysisType.RISKS:
-            result = await analyze_risks(project_id_str, doc_name_map)
+            result = await analyze_risks(project_id_str, doc_name_map, request_id=request_id)
         elif analysis_type == AnalysisType.GROWTH:
-            result = await analyze_growth(project_id_str, doc_name_map)
+            result = await analyze_growth(project_id_str, doc_name_map, request_id=request_id)
         elif analysis_type == AnalysisType.FINANCIALS:
-            result = await analyze_financials(project_id_str, doc_name_map)
+            result = await analyze_financials(project_id_str, doc_name_map, request_id=request_id)
         elif analysis_type == AnalysisType.SUMMARY:
-            result = await analyze_summary(project_id_str, doc_name_map)
+            result = await analyze_summary(project_id_str, doc_name_map, request_id=request_id)
         else:
             raise ValueError(f"Unknown analysis type: {analysis_type}")
 
@@ -99,6 +103,13 @@ async def _run_analysis(
         run.model_used = result.get("model_used")
         run.completed_at = datetime.now(timezone.utc)
         await db.flush()
+
+    except HTTPException:
+        run.status = RunStatus.FAILED
+        run.result_json = {"error": "upstream_error"}
+        run.completed_at = datetime.now(timezone.utc)
+        await db.flush()
+        raise  # re-raise 504/429 directly — already clean HTTP errors
 
     except Exception as e:
         run.status = RunStatus.FAILED
@@ -122,47 +133,59 @@ async def _run_analysis(
 
 
 @router.post("/risks", response_model=AnalysisResponse)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
 async def run_risk_analysis(
+    request: Request,
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Run risk assessment analysis."""
     project = await _get_project_or_404(project_id, user, db)
-    return await _run_analysis(project, AnalysisType.RISKS, db)
+    request_id = getattr(request.state, "request_id", None)
+    return await _run_analysis(project, AnalysisType.RISKS, db, request_id=request_id)
 
 
 @router.post("/growth", response_model=AnalysisResponse)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
 async def run_growth_analysis(
+    request: Request,
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Run growth opportunities analysis."""
     project = await _get_project_or_404(project_id, user, db)
-    return await _run_analysis(project, AnalysisType.GROWTH, db)
+    request_id = getattr(request.state, "request_id", None)
+    return await _run_analysis(project, AnalysisType.GROWTH, db, request_id=request_id)
 
 
 @router.post("/financials", response_model=AnalysisResponse)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
 async def run_financial_analysis(
+    request: Request,
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Run financial metrics extraction."""
     project = await _get_project_or_404(project_id, user, db)
-    return await _run_analysis(project, AnalysisType.FINANCIALS, db)
+    request_id = getattr(request.state, "request_id", None)
+    return await _run_analysis(project, AnalysisType.FINANCIALS, db, request_id=request_id)
 
 
 @router.post("/summary", response_model=AnalysisResponse)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
 async def run_summary_analysis(
+    request: Request,
     project_id: UUID,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Generate executive summary."""
     project = await _get_project_or_404(project_id, user, db)
-    return await _run_analysis(project, AnalysisType.SUMMARY, db)
+    request_id = getattr(request.state, "request_id", None)
+    return await _run_analysis(project, AnalysisType.SUMMARY, db, request_id=request_id)
 
 
 @router.get("/{run_id}", response_model=AnalysisResponse)

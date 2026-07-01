@@ -1,12 +1,11 @@
 """
 Chat module — conversational Q&A with streaming SSE and inline citations.
+Uses the resilient Gemini client for streaming (no retry — SSE is stateful).
 """
 from __future__ import annotations
 
 import json
 from collections.abc import AsyncGenerator
-
-from google import genai
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -43,12 +42,13 @@ async def chat_completion(
     project_id: str,
     history: list[dict] | None = None,
     doc_name_map: dict[str, str] | None = None,
+    request_id: str | None = None,
 ) -> dict:
     """
     Non-streaming chat completion with citations.
     Returns full response + citations list.
     """
-    logger.info("chat_start", project_id=project_id, question_len=len(question))
+    logger.info("chat_start", project_id=project_id, question_len=len(question), request_id=request_id)
 
     # Route query and retrieve
     routed = route_query(question)
@@ -79,18 +79,17 @@ async def chat_completion(
         question=question,
     )
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    response = client.models.generate_content(
-        model=settings.GEMINI_LLM_MODEL,
-        contents=prompt,
-        config=genai.types.GenerateContentConfig(
-            temperature=0.3,
-            system_instruction=CHAT_SYSTEM_PROMPT,
-        ),
-    )
-    answer = response.text
+    from app.core.gemini_client import generate_content
 
-    logger.info("chat_complete", project_id=project_id, answer_len=len(answer))
+    answer = await generate_content(
+        prompt=prompt,
+        model=settings.GEMINI_LLM_MODEL,
+        temperature=0.3,
+        system_instruction=CHAT_SYSTEM_PROMPT,
+        request_id=request_id,
+    )
+
+    logger.info("chat_complete", project_id=project_id, answer_len=len(answer), request_id=request_id)
 
     return {
         "answer": answer,
@@ -105,12 +104,14 @@ async def chat_stream(
     project_id: str,
     history: list[dict] | None = None,
     doc_name_map: dict[str, str] | None = None,
+    request_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """
     Streaming chat completion via SSE.
     Yields SSE-formatted data chunks.
+    NOT cached — streaming responses are excluded from semantic cache by design.
     """
-    logger.info("chat_stream_start", project_id=project_id)
+    logger.info("chat_stream_start", project_id=project_id, request_id=request_id)
 
     routed = route_query(question)
     chunks = hybrid_search(
@@ -142,20 +143,22 @@ async def chat_stream(
     # Send citations first
     yield f"data: {json.dumps({'type': 'citations', 'citations': citations})}\n\n"
 
-    # Stream LLM response
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    response_stream = client.models.generate_content_stream(
-        model=settings.GEMINI_LLM_MODEL,
-        contents=prompt,
-        config=genai.types.GenerateContentConfig(
+    # Stream LLM response — uses streaming variant (no retry wrapper)
+    from app.core.gemini_client import stream_content
+
+    try:
+        response_stream = stream_content(
+            prompt=prompt,
+            model=settings.GEMINI_LLM_MODEL,
             temperature=0.3,
             system_instruction=CHAT_SYSTEM_PROMPT,
-        ),
-    )
-    for chunk in response_stream:
-        if chunk.text:
-            yield f"data: {json.dumps({'type': 'token', 'content': chunk.text})}\n\n"
-    
-    yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        )
+        for chunk in response_stream:
+            if chunk.text:
+                yield f"data: {json.dumps({'type': 'token', 'content': chunk.text})}\n\n"
+    except Exception as exc:
+        logger.error("chat_stream_error", error=str(exc), request_id=request_id)
+        yield f"data: {json.dumps({'type': 'error', 'message': 'Stream interrupted. Please retry.'})}\n\n"
 
+    yield f"data: {json.dumps({'type': 'done'})}\n\n"
     yield "data: [DONE]\n\n"

@@ -223,3 +223,47 @@ def expand_parent_context(chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
             chunk.parent_text = parent_map[chunk.parent_chunk_id]
 
     return chunks
+
+
+def retrieve(
+    query: str,
+    project_id: str,
+    top_k: int = 10,
+    section_filters: list[str] | None = None,
+    doc_type_filters: list[str] | None = None,
+) -> list[RetrievedChunk]:
+    """
+    Unified retrieval gateway that honours the RETRIEVAL_MODE setting.
+
+    RETRIEVAL_MODE controls which search path is used:
+      "hybrid"  — Dense + BM25 fused via RRF (default, recommended)
+      "dense"   — Dense vector search only
+      "sparse"  — BM25 keyword search only
+
+    This is useful for A/B testing retrieval strategies without code changes.
+    """
+    mode = settings.RETRIEVAL_MODE.lower()
+
+    logger.info(
+        "retrieve_dispatch",
+        mode=mode,
+        project_id=project_id,
+        query_len=len(query),
+    )
+
+    if mode == "dense":
+        return dense_search(
+            query, project_id, top_k=top_k,
+            section_filters=section_filters, doc_type_filters=doc_type_filters,
+        )
+    elif mode == "sparse":
+        return sparse_search(
+            query, project_id, top_k=top_k,
+            section_filters=section_filters, doc_type_filters=doc_type_filters,
+        )
+    else:
+        # Default: hybrid (RRF fusion of dense + sparse)
+        return hybrid_search(
+            query, project_id, top_k=top_k,
+            section_filters=section_filters, doc_type_filters=doc_type_filters,
+        )

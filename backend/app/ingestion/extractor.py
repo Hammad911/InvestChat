@@ -58,93 +58,157 @@ def extract_document(file_bytes: bytes, filename: str) -> ExtractionResult:
 
 
 def _extract_pdf(file_bytes: bytes, filename: str) -> ExtractionResult:
-    """Extract from PDF using pdfplumber for text and tables."""
+    """Extract from PDF using camelot for tables, pdfplumber for text, and Gemini for OCR."""
+    import tempfile
     import pdfplumber
+    import camelot
+    from pdf2image import convert_from_bytes
+    from google import genai
+    from app.core.config import settings
 
     elements: list[ExtractedElement] = []
     tables: list[dict] = []
 
-    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-        page_count = len(pdf.pages)
+    # Initialize Gemini client for OCR fallback on scanned pages
+    gemini_client = None
+    if settings.GEMINI_API_KEY:
+        gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-        for page_num, page in enumerate(pdf.pages, 1):
-            # ── Extract structured tables first ───────────────────────
-            page_tables = page.extract_tables()
-            table_bboxes = []
-            for t_idx, table in enumerate(page_tables):
-                if table and len(table) > 1:
-                    headers = [str(h or "").strip() for h in table[0]]
-                    rows = []
-                    for row in table[1:]:
-                        rows.append({
-                            headers[j]: str(cell or "").strip()
-                            for j, cell in enumerate(row)
-                            if j < len(headers)
-                        })
-                    tables.append({
-                        "page_number": page_num,
-                        "table_index": t_idx,
-                        "headers": headers,
-                        "rows": rows,
-                    })
-                    # Build a text representation of the table too
-                    table_text = "\n".join(
-                        " | ".join(str(cell or "") for cell in row)
-                        for row in table
-                    )
-                    if table_text.strip():
-                        elements.append(ExtractedElement(
-                            text=table_text.strip(),
-                            element_type="table",
-                            page_number=page_num,
-                        ))
-                    # Track the bounding boxes so we don't double-extract
-                    if hasattr(page, "find_tables"):
-                        for t in page.find_tables():
-                            table_bboxes.append(t.bbox)
+    # camelot requires a file path, so we write the bytes to a temp file
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=True) as temp_pdf:
+        temp_pdf.write(file_bytes)
+        temp_pdf.flush()
 
-            # ── Extract narrative text outside of tables ───────────────
-            # Crop out table regions to avoid duplicating content
-            text_page = page
-            for bbox in table_bboxes:
-                try:
-                    text_page = text_page.outside_bbox(bbox)
-                except Exception:
-                    pass
+        with pdfplumber.open(temp_pdf.name) as pdf:
+            page_count = len(pdf.pages)
 
-            try:
-                raw_text = text_page.extract_text(x_tolerance=2, y_tolerance=2)
-            except RecursionError:
-                # Some PDFs cause infinite recursion in pdfplumber's
-                # cropped page objects — fall back to the full page text
-                logger.warning(
-                    "pdfplumber_recursion_fallback",
-                    page=page_num,
-                    msg="Falling back to full page text extraction",
-                )
+            for page_num, page in enumerate(pdf.pages, 1):
+                # Check for native text
+                raw_text = None
                 try:
                     raw_text = page.extract_text(x_tolerance=2, y_tolerance=2)
-                except RecursionError:
-                    raw_text = None
+                except Exception as e:
+                    logger.warning("pdfplumber_text_extraction_failed", page=page_num, error=str(e))
 
-            if raw_text:
-                # Split into paragraphs / lines and classify
-                for line in raw_text.split("\n"):
-                    line = line.strip()
-                    if not line:
+                # Threshold: if less than 50 characters, we consider it a scanned/image page
+                if raw_text and len(raw_text.strip()) > 50:
+                    # ── NATIVE TEXT PAGE ──
+                    
+                    # 1. Extract tables using camelot
+                    try:
+                        # Use lattice (border-based) by default, fallback to stream (whitespace-based)
+                        camelot_tables = camelot.read_pdf(temp_pdf.name, pages=str(page_num), flavor="lattice")
+                        if not camelot_tables:
+                            camelot_tables = camelot.read_pdf(temp_pdf.name, pages=str(page_num), flavor="stream")
+                    except Exception as e:
+                        logger.warning("camelot_extraction_failed", page=page_num, error=str(e))
+                        camelot_tables = []
+
+                    for t_idx, table in enumerate(camelot_tables):
+                        df = table.df
+                        if df.empty or len(df) < 2:
+                            continue
+
+                        headers = [str(h).strip() for h in df.iloc[0].tolist()]
+                        rows = []
+                        for _, row in df.iloc[1:].iterrows():
+                            rows.append({
+                                headers[j]: str(cell).strip()
+                                for j, cell in enumerate(row)
+                                if j < len(headers)
+                            })
+
+                        tables.append({
+                            "page_number": page_num,
+                            "table_index": t_idx,
+                            "headers": headers,
+                            "rows": rows,
+                        })
+
+                        # Build a text representation of the table
+                        try:
+                            table_text = df.to_csv(index=False, sep="|")
+                            if table_text.strip():
+                                elements.append(ExtractedElement(
+                                    text=table_text.strip(),
+                                    element_type="table",
+                                    page_number=page_num,
+                                ))
+                        except Exception:
+                            pass
+
+                    # 2. Extract narrative text using pdfplumber
+                    # We rely on lines to classify text (we don't perfectly crop table bboxes here 
+                    # as camelot handles table logic independently)
+                    for line in raw_text.split("\n"):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        
+                        # Heuristic classification
+                        if len(line) < 80 and (line.isupper() or line.endswith(":")):
+                            etype = "title"
+                        elif line.startswith(("•", "-", "*", "–", "◦")):
+                            etype = "list_item"
+                        else:
+                            etype = "narrative"
+                            
+                        elements.append(ExtractedElement(
+                            text=line,
+                            element_type=etype,
+                            page_number=page_num,
+                        ))
+
+                else:
+                    # ── SCANNED PAGE (OCR FALLBACK) ──
+                    if not gemini_client:
+                        logger.warning("gemini_client_missing", msg="Skipping OCR because GEMINI_API_KEY is not set.")
                         continue
-                    # Heuristic: short ALL-CAPS lines or very short lines are titles
-                    if len(line) < 80 and (line.isupper() or line.endswith(":")):
-                        etype = "title"
-                    elif line.startswith(("•", "-", "*", "–", "◦")):
-                        etype = "list_item"
-                    else:
-                        etype = "narrative"
-                    elements.append(ExtractedElement(
-                        text=line,
-                        element_type=etype,
-                        page_number=page_num,
-                    ))
+                        
+                    logger.info("gemini_ocr_fallback", page=page_num, filename=filename)
+                    try:
+                        # Convert specific page to image
+                        images = convert_from_bytes(file_bytes, first_page=page_num, last_page=page_num)
+                        if images:
+                            image = images[0]
+                            prompt = (
+                                "Extract all the text from this document page. "
+                                "If there are tables, format them strictly as Markdown tables. "
+                                "If there are lists, format them as Markdown lists. "
+                                "Do not include any introductory or conversational text, just the extracted content."
+                            )
+                            # Using 1.5 flash as it is highly efficient and budget-friendly for OCR
+                            response = gemini_client.models.generate_content(
+                                model="gemini-1.5-flash",
+                                contents=[prompt, image]
+                            )
+                            ocr_text = response.text if response.text else ""
+
+                            # Naive parse of Gemini markdown output
+                            for block in ocr_text.split("\n\n"):
+                                block = block.strip()
+                                if not block:
+                                    continue
+                                if "|" in block and "-|-" in block:
+                                    elements.append(ExtractedElement(
+                                        text=block,
+                                        element_type="table",
+                                        page_number=page_num,
+                                    ))
+                                elif block.startswith(("#", "•", "-", "*")):
+                                    elements.append(ExtractedElement(
+                                        text=block,
+                                        element_type="list_item" if block.startswith(("•", "-", "*")) else "title",
+                                        page_number=page_num,
+                                    ))
+                                else:
+                                    elements.append(ExtractedElement(
+                                        text=block,
+                                        element_type="narrative",
+                                        page_number=page_num,
+                                    ))
+                    except Exception as e:
+                        logger.error("gemini_ocr_failed", page=page_num, error=str(e))
 
     logger.info(
         "extraction_complete",

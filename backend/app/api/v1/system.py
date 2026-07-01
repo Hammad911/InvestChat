@@ -1,6 +1,7 @@
 """
-System health check API route.
-Reports status of all services: Ollama, Qdrant, PostgreSQL, Redis, MinIO.
+System health check and metrics API routes.
+Reports status of all services: Gemini, Qdrant, PostgreSQL, Redis, MinIO.
+Also exposes /system/metrics for operational telemetry.
 """
 from __future__ import annotations
 
@@ -121,3 +122,86 @@ async def health_check():
         llm_model=llm_model,
         embed_model=embed_model,
     )
+
+
+# ── Metrics ───────────────────────────────────────────────────────────────────
+
+
+class MetricsResponse(BaseModel):
+    cache_hit_rate_1hr: float | None  # 0.0–1.0, None if no data
+    avg_retrieval_latency_ms: float | None
+    avg_generation_latency_ms: float | None
+    celery_queue_depth: int
+    total_cache_hits_1hr: int
+    total_cache_misses_1hr: int
+
+
+@router.get("/metrics", response_model=MetricsResponse)
+async def get_metrics():
+    """
+    Operational metrics aggregated from Redis over the last 1 hour.
+
+    - cache_hit_rate_1hr: fraction of analysis requests served from cache
+    - avg_retrieval_latency_ms: rolling average Qdrant retrieval time
+    - avg_generation_latency_ms: rolling average Gemini generation time
+    - celery_queue_depth: number of tasks waiting in the Celery queue
+    """
+    import redis as redis_lib
+    import time
+
+    try:
+        r = redis_lib.from_url(settings.REDIS_URL, decode_responses=True)
+
+        # ── Cache hit/miss counters (last 60 minutes) ─────────────────────
+        now_bucket = int(time.time() // 60)
+        namespaces = ["risks", "growth", "financials", "summary"]
+        total_hits = 0
+        total_misses = 0
+
+        for ns in namespaces:
+            for offset in range(60):
+                bucket = now_bucket - offset
+                hit_key = f"metrics:cache_hit:{ns}:{bucket}"
+                miss_key = f"metrics:cache_miss:{ns}:{bucket}"
+                h = r.get(hit_key)
+                m = r.get(miss_key)
+                total_hits += int(h) if h else 0
+                total_misses += int(m) if m else 0
+
+        total_requests = total_hits + total_misses
+        cache_hit_rate = (total_hits / total_requests) if total_requests > 0 else None
+
+        # ── Latency rolling averages ──────────────────────────────────────
+        def _avg_latency(stage: str) -> float | None:
+            raw = r.lrange(f"metrics:latency:{stage}", 0, 999)
+            if not raw:
+                return None
+            vals = [float(v) for v in raw if v]
+            return round(sum(vals) / len(vals), 2) if vals else None
+
+        avg_retrieval = _avg_latency("retrieval")
+        avg_generation = _avg_latency("generation")
+
+        # ── Celery queue depth ────────────────────────────────────────────
+        # Celery tasks live in the "celery" list in Redis DB 0
+        celery_queue_depth = r.llen("celery") or 0
+
+        return MetricsResponse(
+            cache_hit_rate_1hr=round(cache_hit_rate, 4) if cache_hit_rate is not None else None,
+            avg_retrieval_latency_ms=avg_retrieval,
+            avg_generation_latency_ms=avg_generation,
+            celery_queue_depth=celery_queue_depth,
+            total_cache_hits_1hr=total_hits,
+            total_cache_misses_1hr=total_misses,
+        )
+
+    except Exception as exc:
+        logger.error("metrics_fetch_error", error=str(exc))
+        return MetricsResponse(
+            cache_hit_rate_1hr=None,
+            avg_retrieval_latency_ms=None,
+            avg_generation_latency_ms=None,
+            celery_queue_depth=0,
+            total_cache_hits_1hr=0,
+            total_cache_misses_1hr=0,
+        )
